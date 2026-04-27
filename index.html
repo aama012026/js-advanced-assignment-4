@@ -7,7 +7,6 @@
 	<link rel="preconnect" href="https://fonts.googleapis.com">
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 	<link href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
-	<link href="https://fonts.googleapis.com/css2?family=Poltawski+Nowy:ital,wght@0,400..700;1,400..700&display=swap" rel="stylesheet">
 
 	<link rel="stylesheet" href="./static/style.css">
 	<script src="./src/main.ts" type="module"></script>
@@ -17,8 +16,8 @@
 	<h1>OpenDotaApiTest</h1>
 	<div>
 		<label for="search-input">Enter a 9-digit steam account-id or a persona-name</label>
-		<input type="text" id="search-input" name="search-input">
-		<button type="button" id="search-btn">search</button>
+		<input type="text" id="search-input" name="search-input" data-bind:search-term >
+		<button type="button" id="search-btn" data-attr:disabled="$searchTerm === ''" disabled >search</button>
 	</div>
 	<div id="match-history"></div>
 </body>

@@ -3,6 +3,8 @@ import { assert, setLocal, tryGetElement, tryGetJson, tryGetLocal, type NamedEle
 import { PATHS } from './modules/paths.js';
 import { type Distributions, type AccountId, type Player, type SearchResult, type MatchForPlayer, leaverStatusByKey, LEAVER_STATUS } from './types/OpenDotaTypes.js'
 
+// @ts-expect-error (only required for TypeScript projects)
+import 'https://cdn.jsdelivr.net/gh/starfederation/datastar@v1.0.1/bundles/datastar.js'
 const HOST = 'https://api.opendota.com/'
 const ENDPOINT = {
 	matches: new URL('api/matches', HOST),
