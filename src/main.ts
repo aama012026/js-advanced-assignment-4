@@ -45,8 +45,6 @@ const LocalDataKey = {
 // INIT
 let benchmarks = tryGetLocal<Benchmark[]>(LocalDataKey.Benchmarks)
 
-const searchInput = tryGetElement<HTMLInputElement>('#search-input')
-const searchBtn = tryGetElement<HTMLButtonElement>('#search-btn')
 const templates = {
 	matchHistory: tryGetElement<HTMLTemplateElement>('#match-history-template'),
 	matchSummary: tryGetElement<HTMLTemplateElement>('#match-summary-template')
@@ -55,13 +53,12 @@ const sections = {
 	matchHistory: tryGetElement<HTMLDivElement>('#match-history')
 }
 
-searchBtn.addEventListener('click', searchTypedAccount)
-
 // page flow -> search accounts -> provide sample account ids.
 // show match summary for recent matches. Let user click match.
 // show match details with focus on account hero. Let user request parse if match is not parsed.
-async function searchTypedAccount() {
-	const playerResult = await tryGetPlayer(searchInput.value)
+async function searchTypedAccount(searchTerm: string | AccountId) {
+	const playerResult = await tryGetPlayer(searchTerm)
+	
 	if(!playerResult.ok) {
 		console.error(playerResult.msg)
 	}
@@ -74,7 +71,6 @@ async function searchTypedAccount() {
 			console.error(matchesResult.msg)
 		}
 		else {
-			console.log(matchesResult.msg)
 			console.log(JSON.stringify(matchesResult.data))
 			const matchHistory: PlayerMatchSummary[] = matchesResult.data!.map(match => 
 				formatMatchSummary(match, player.profile.account_id)
@@ -89,7 +85,7 @@ async function searchTypedAccount() {
 		}
 	}
 }
-
+(window as any).searchTypedAccount = searchTypedAccount
 
 async function tryGetPlayer(idOrPersona: AccountId | string): Promise<Result<Player>> {
 	let accountId: number

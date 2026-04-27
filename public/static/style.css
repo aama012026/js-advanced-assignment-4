@@ -21,6 +21,58 @@
 	--black: #101415;
 }
 
+.rare {
+	--color: var(--c-rare);
+	--bg-color: var(--slate);
+}
+
+.epic {
+	--color: var(--c-epic);
+	--bg-color: var(--slate);
+}
+
+button {
+	font-size: 1.5rem;
+	padding: 0.2lh 1ch;
+	font-family: 'Noto Serif', serif;
+	font-weight: 600;
+	border: 0.1em solid var(--color);
+	outline: 0.05em solid #fff3;
+	outline-offset: -0.1em;
+	border-radius: 0.2em;
+	color: var(--color);
+	background-color: var(--bg-color);
+	transition: all 360ms;
+		&:hover {
+		cursor: pointer;
+		text-shadow: 0 0 0.2em var(--color);
+		box-shadow: 0 0 0.4em var(--color);
+		outline-width: 0.1em;
+		transition: all 120ms;
+	}
+	&:disabled {
+		cursor: auto;
+		text-shadow: none;
+		box-shadow: none;
+		outline-width: 0.05em;
+		outline-offset: -0.05em;
+		opacity: 50%;
+	}
+}
+
+input {
+	font-size: 1.5rem;
+	padding: 0.2lh 1ch;
+	font-family: 'Noto Serif', serif;
+	font-weight: 600;
+	border: 0.1em solid var(--color);
+	outline: 0.05em solid #fff3;
+	outline-offset: -0.1em;
+	border-radius: 0.2em;
+	color: var(--white);
+	background-color: var(--bg-color);
+}
+
 body {
 	color: white;
 	background-color: var(--black);
@@ -56,6 +108,12 @@ tr:has([data-result='Defeat']) {
 		outline: 1px solid #fff1;
 		outline-offset: -1px;
 		box-shadow: -8px 0 8px #0002;
+		transition: all 360ms;
+		&:hover {
+			outline-color: #fff2;
+			box-shadow: 0 0 16px #8882;
+			transition: all 120ms;
+		}
 	}
 }
 [data-cell='result'], [data-cell='side'], .kda {
