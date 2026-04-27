@@ -1,0 +1,100 @@
+:root {
+	--c-common: #2BAB01;
+	--c-rare: #1A87F9;
+	--c-epic: #B812F9;
+	--c-artifact: #E29B01;
+	--c-artifact-transparent: #E29B0188;
+
+	--strength-red: #ec3d06;
+	--strength-red-transparent: #ec3d0688;
+	--strength-red-transparent-border: #ec3d0622;
+	--agility-green: #26e030;
+	--agility-green-transparent: #26e03088;
+	--agility-green-transparent-border: #26e03022;
+	--intelligence-blue: #01d8eb;
+	--universe-purple: #a82be6;
+
+	--white: white;
+	--grey-lit: #b2b2b2;
+	--grey-dim: #4c4c4c;
+	--slate: #242627;
+	--black: #101415;
+}
+
+body {
+	color: white;
+	background-color: var(--black);
+	font-family:'Noto Serif', serif;
+}
+
+table > caption {
+	text-align: left;
+	font-size: 2.5rem;
+}
+
+tr:has([data-result='Victory']) {
+	background: linear-gradient(to left, var(--agility-green-transparent), transparent 90%);
+	border: 2px solid var(--agility-green-transparent-border);
+	border-right-color: var(--agility-green);
+	border-left: none;
+	background: linear-gradient(to left, var(--agility-green-transparent), transparent);
+}
+tr:has([data-result='Defeat']) {
+	background: linear-gradient(to left, var(--strength-red-transparent), transparent 90%);
+	border: 2px solid var(--strength-red-transparent-border);
+	border-right-color: var(--strength-red);
+	border-left: none;
+	background: linear-gradient(to left, var(--strength-red-transparent), transparent);
+}
+
+[data-cell='hero-img'] {
+	display: grid;
+	place-items: center;
+	padding: 0.2em;
+	& img {
+		height: 4lh;
+		outline: 1px solid #fff1;
+		outline-offset: -1px;
+		box-shadow: -8px 0 8px #0002;
+	}
+}
+[data-cell='result'], [data-cell='side'], .kda {
+	font-size: 1.5rem;
+}
+[data-result='Victory'] {
+	color: var(--c-artifact);
+
+}
+
+[data-result='Defeat'] {
+	color: var(--grey-lit);
+}
+
+[data-side='Radiant'] {
+	color: var(--agility-green);
+	text-shadow: 0 0 4px var(--agility-green);
+}
+
+[data-side='Dire'] {
+	color: var(--strength-red);
+	text-shadow: 0 0 4px var(--strength-red);
+}
+
+[data-cell='duration'] {
+	font-size: 2.5rem;
+}
+
+table {
+	border-collapse: collapse;
+	width: 90%;
+	text-align: left;
+	margin: 1rem;
+}
+th, td, table > caption {
+	padding: 0 1rem;
+}
+#match-history {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}

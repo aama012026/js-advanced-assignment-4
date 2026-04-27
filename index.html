@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+	<link href="https://fonts.googleapis.com/css2?family=Poltawski+Nowy:ital,wght@0,400..700;1,400..700&display=swap" rel="stylesheet">
+
+	<link rel="stylesheet" href="./static/style.css">
+	<script src="./src/main.ts" type="module"></script>
+	<title>OpenDotaApiTest</title>
+</head>
+<body>
+	<h1>OpenDotaApiTest</h1>
+	<div>
+		<label for="search-input">Enter a 9-digit steam account-id or a persona-name</label>
+		<input type="text" id="search-input" name="search-input">
+		<button type="button" id="search-btn">search</button>
+	</div>
+	<div id="match-history"></div>
+</body>
+
+<template id="match-history-template">
+	<table>
+		<caption>Match History</caption>
+		<thead>
+			<tr>
+				<th scope="col">Match</th>
+				<th scope="col">Hero</th>
+				<th scope="col">Result</th>
+				<th scope="col">Duration</th>
+				<th scope="col">Score</th>
+				<th scope="col">Type</th>
+			</tr>
+		</thead>
+		<tbody></tbody>
+	</table>
+</template>
+
+<template id="match-summary-template">
+	<tr>
+		<td>
+			<div data-cell="match-id">Match:</div>
+			<div data-cell="match-time">Time:</div>
+		</td>
+		<td data-cell="hero-img"></td>
+		<td>
+			<div data-cell="result"></div>
+			<div data-cell="side"></div>
+		</td>
+		<td data-cell="duration"></td>
+		<td class="kda">
+			<span>Kda:
+				<span data-cell="kills"></span> /
+				<span data-cell="deaths"></span> /
+				<span data-cell="assists"></span>
+			</span>
+		</td>
+		<td >
+			<div data-cell="gamemode"></div>
+			<div data-cell="lobby-type"></div>
+			<div data-cell="left"></div>
+		</td>
+	</tr>
+</template>
+</html>
