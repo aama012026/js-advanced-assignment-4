@@ -84,7 +84,37 @@ main {
 	}
 }
 
+#profile {
+	display: grid;
+	width: fit-content;
+	place-items: center start;
+	gap: 0.5rem;
+	grid-template-areas: 
+	"pnm avt mdl"
+	"pnm avt mdl"
+	"acc avt mdl"
+	;
+	& > * {
+		margin: 0;
+		padding: 0;
+	}
+}
 
+[data-grid='pnm'] {grid-area: pnm;}
+[data-grid='acc'] {grid-area: acc;}
+[data-grid='avt'] {
+	grid-area: avt;
+	height: 3lh;
+}
+[data-grid='mdl'] {
+	grid-area: mdl;
+	height: 3lh;
+	justify-self: center;
+}
+[data-grid='rnk'] {
+	grid-row: 3;
+	grid-column: 3;
+}
 
 .flex-row {
 	display: flex;
