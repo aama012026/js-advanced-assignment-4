@@ -7,7 +7,6 @@ import { type Distributions, type AccountId, type Player, type SearchResult, typ
 
 // @ts-expect-error (only required for TypeScript projects)
 import 'https://cdn.jsdelivr.net/gh/starfederation/datastar@v1.0.1/bundles/datastar.js'
-const HOST = 'https://api.opendota.com/'
 axios.defaults.baseURL = 'https://api.opendota.com/api'
 axios.defaults.allowAbsoluteUrls = false
 
@@ -71,7 +70,6 @@ updateCallsLeft(0)
 function updateCallsLeft(callsToSubtract?: number): void {
 	const count = callsToSubtract != null ? callsToSubtract : 1
 	const now = Date.now() as UnixTimestamp
-	// This is wrong as we also need to update timestamp!
 	if(now - calls.minute.sinceWhen > 60000){
 		calls.minute.left = 60
 		calls.minute.sinceWhen = Date.now() as UnixTimestamp
@@ -132,7 +130,9 @@ async function tryGetPlayer(idOrPersona: AccountId | string): Promise<AxiosRespo
 }
 
 async function tryGetMatches(id: AccountId): Promise<AxiosResponse<MatchForPlayer[]>> {
-	return await axios.get<MatchForPlayer[]>(`${ENDPOINT.PLAYERS}/${id}/matches`)
+	const response = await axios.get<MatchForPlayer[]>(`${ENDPOINT.PLAYERS}/${id}/matches`)
+	updateCallsLeft()
+	return response
 }
 
 async function tryGetMatch(matchId: number): Promise<SparseMatch | FullMatch | null> {
@@ -140,20 +140,19 @@ async function tryGetMatch(matchId: number): Promise<SparseMatch | FullMatch | n
 	if(match) {
 		return match
 	}
-	const result = await tryGetJson<SparseMatch | FullMatch>(new URL(`${ENDPOINT.MATCHES}/${matchId}`))
-	if(!result.ok) {
+	const response = await axios.get<SparseMatch | FullMatch>(`${ENDPOINT.MATCHES}/${matchId}`)
+	updateCallsLeft()
+	if(response.status != 200) {
 		return null
 	}
-	setLocal(`match:${matchId}`, assert(result.data, 'match.data', 'Could not store match.'))
-	return result.data
+	setLocal(`match:${matchId}`, response.data)
+	return response.data
 }
 
-async function requestParse(matchId: number) {
-	const result = await tryGetJson<unknown>(new URL(`${ENDPOINT.REQUEST}/${matchId}`), {method: 'POST', headers: {'Content-Type': 'application/json'}})
-	if(!result.ok) {
-		return null
-	}
-	return result.data
+async function requestParse(matchId: number): Promise<AxiosResponse> {
+	const response = await axios.post(`${ENDPOINT.REQUEST}/${matchId}`)
+	updateCallsLeft()
+	return response
 }
 
 async function tryGetRankDistribution(): Promise<RankDistribution | null> {
@@ -161,6 +160,7 @@ async function tryGetRankDistribution(): Promise<RankDistribution | null> {
 	// Try to get from localstorage first, fetch if not present or stale (here 24H shelf life).
 	if(!(rankDistribution && new Date().getHours() - new Date(rankDistribution.timestamp).getHours() <= 24)) {
 		const result = await axios.get<Distributions>(ENDPOINT.DISTRIBUTIONS)
+		updateCallsLeft()
 		if(result.status != 200) {
 			rankDistribution = formatRankDistribution(result.data)
 			setLocal<RankDistribution>(LocalDataKey.RankDistribution, rankDistribution)
