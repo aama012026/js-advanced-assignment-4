@@ -1,6 +1,7 @@
 :root {
 	--c-common: #2BAB01;
 	--c-rare: #1A87F9;
+	--c-rare-transparent: #1a87f988;
 	--c-epic: #B812F9;
 	--c-artifact: #E29B01;
 	--c-artifact-transparent: #E29B0188;
@@ -19,6 +20,8 @@
 	--grey-dim: #4c4c4c;
 	--slate: #242627;
 	--black: #101415;
+
+	--border: 0.1em solid white;
 }
 
 .rare {
@@ -29,6 +32,63 @@
 .epic {
 	--color: var(--c-epic);
 	--bg-color: var(--slate);
+}
+
+.box {
+	padding: 0.2lh 1ch;
+	border: 0.1em solid var(--color);
+	border-radius: 0.2em;
+	outline: 0.05em solid #fff3;
+	outline-offset: -0.1em;
+	background-color: var(--bg-color);
+	transition: all 360ms;
+	&:hover {
+		text-shadow: 0 0 0.2em var(--color);
+		box-shadow: 0 0 0.4em var(--color);
+		outline-width: 0.1em;
+		transition: all 120ms;
+	}
+}
+
+h1, h2 {
+	text-shadow: 0 0 0.3rem var(--c-rare);
+	transition: all 360ms;
+	&:hover {
+		text-shadow: 0 0 0.6rem var(--c-rare);
+	}
+}
+
+header {
+	padding: 0.5rem 1rem;
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	place-items: center;
+	background: linear-gradient(150deg, #333, #111);
+	border-bottom: 0.1rem solid var(--grey-dim);
+	& h1 {
+		justify-self: start;
+		margin: 0;
+	}
+}
+main {
+	padding: 1rem 1rem;
+	background: linear-gradient(45deg, var(--slate), var(--black));
+}
+
+#calls-left {
+	text-align: center;
+	& h2 {
+		font-size: 1.2rem;
+		margin: 0 0 0.2lh;
+		letter-spacing: 8%;
+	}
+}
+
+
+
+.flex-row {
+	display: flex;
+	gap: 1em;
 }
 
 button {
@@ -73,7 +133,9 @@ input {
 	background-color: var(--bg-color);
 }
 
+
 body {
+	margin: 0;
 	color: white;
 	background-color: var(--black);
 	font-family:'Noto Serif', serif;

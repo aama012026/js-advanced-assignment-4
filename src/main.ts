@@ -1,3 +1,5 @@
+import axios from 'axios';
+import type { AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
 import { formatMatchSummary, formatRankDistribution, heroLabels, type Benchmark, type FullMatch, type PlayerMatchSummary, type RankDistribution, type SparseMatch } from './modules/bindings.js';
 import { assert, setLocal, tryGetElement, tryGetJson, tryGetLocal, type NamedElement, type Result } from './modules/flow.js';
 import { PATHS } from './modules/paths.js';
@@ -6,33 +8,36 @@ import { type Distributions, type AccountId, type Player, type SearchResult, typ
 // @ts-expect-error (only required for TypeScript projects)
 import 'https://cdn.jsdelivr.net/gh/starfederation/datastar@v1.0.1/bundles/datastar.js'
 const HOST = 'https://api.opendota.com/'
+axios.defaults.baseURL = 'https://api.opendota.com/api'
+axios.defaults.allowAbsoluteUrls = false
+
 const ENDPOINT = {
-	matches: new URL('api/matches', HOST),
-	players: new URL('api/players', HOST),
-	topPlayers: new URL('api/topPlayers', HOST),
-	proPlayers: new URL('api/proPlayers', HOST),
-	proMatches: new URL('api/ProMatches', HOST),
-	publicMatches: new URL('api/publicMatches', HOST),
-	parsedMatches: new URL('api/parsedMatches', HOST),
-	explorer: new URL('api/explorer', HOST),
-	metadata: new URL('api/metadata', HOST),
-	distributions: new URL('api/distributions', HOST),
-	search: new URL('api/search', HOST),
-	rankings: new URL('api/rankings', HOST),
-	benchmarks: new URL('api/benchmarks', HOST),
-	health: new URL('api/health', HOST),
-	request: new URL('api/request', HOST),
-	findMatches: new URL('api/findMatches', HOST),
-	heroes: new URL('api/heroes', HOST),
-	heroStats: new URL('api/heroStats', HOST),
-	leagues: new URL('api/rankings', HOST),
-	teams: new URL('api/rankings', HOST),
-	records: new URL('api/rankings', HOST),
-	live: new URL('api/rankings', HOST),
-	scenarios: new URL('api/rankings', HOST),
-	schema: new URL('api/rankings', HOST),
-	constants: new URL('api/rankings', HOST),
-}
+	MATCHES: '/matches',
+	PlAYERS: '/players',
+	TOP_PlAYERS:'/topPlayers',
+	PRO_PLAYERS: '/proPlayers',
+	PRO_MATCHES: '/ProMatches',
+	PUBLIC_MATCHES: '/publicMatches',
+	PARSED_MATCHES: '/parsedMatches',
+	EXPLORER: '/explorer',
+	METADATA: '/metadata',
+	DISTRIBUTIONS: '/distributions',
+	SEARCH: '/search',
+	RANKINGS: '/rankings',
+	BENCHMARKS: '/benchmarks',
+	HEALTH: '/health',
+	REQUEST: '/request',
+	FIND_MATCHES: '/findMatches',
+	HEROES: '/heroes',
+	HEROSTATS: '/heroStats',
+	LEAGUES: '/rankings',
+	TEAMS: '/rankings',
+	RECORDS: '/rankings',
+	LIVE: '/rankings',
+	SCENARIOS: '/rankings',
+	SCHEMA: '/rankings',
+	CONSTANTS: '/rankings',
+} as const
 
 const LocalDataKey = {
 	RankDistribution: 'rankDistribution',
@@ -52,6 +57,11 @@ const templates = {
 const sections = {
 	matchHistory: tryGetElement<HTMLDivElement>('#match-history')
 }
+
+function updateCallsLeft(leftDay: number, leftMinute: number): void {
+	document.dispatchEvent( new CustomEvent('ratelimitchange', {detail:  {minute: leftMinute, day: leftDay}}))
+}
+updateCallsLeft(2859, 58)
 
 // page flow -> search accounts -> provide sample account ids.
 // show match summary for recent matches. Let user click match.
@@ -90,22 +100,21 @@ async function searchTypedAccount(searchTerm: string | AccountId) {
 async function tryGetPlayer(idOrPersona: AccountId | string): Promise<Result<Player>> {
 	let accountId: number
 	if(typeof idOrPersona === 'string') {
-		const url = new URL(ENDPOINT.search)
-		url.search = `?q=${idOrPersona}`
-		const result = await tryGetJson<SearchResult[]>(url)
-		if(!result.ok) {
+		// url.search = `?q=${idOrPersona}`
+		const response = await axios.get<Player>(ENDPOINT.SEARCH, {params: {q: idOrPersona}})
+		if(response.status != 200) {
 			return {
 				data: null,
 				ok: false,
-				msg: `Could not get search result for ${idOrPersona}.\ntryGetJson failed with msg:\n${result.msg}`
+				msg: `Could not get search result for ${idOrPersona}.\ntryGetJson failed with msg:\n${response.msg}`
 			}
-		} else if(!result.data) {
+		} else if(!response.data) {
 			return {
 				data: null,
 				ok: false,
 			}
 		}
-		accountId = assert(result.data![0], 'result.data![0]', `Could not get user for persona ${idOrPersona}`).account_id
+		accountId = assert(response.data![0], 'result.data![0]', `Could not get user for persona ${idOrPersona}`).account_id
 	}
 	else {
 		accountId = idOrPersona
