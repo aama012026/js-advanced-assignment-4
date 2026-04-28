@@ -25,6 +25,16 @@
 		</section>
 	</header>
 	<main>
+		<section id="profile" data-show="!!$accountId" data-on:profileupdate__document="[
+				$personaName, $accountId, $steamAvatar,	$rankMedal,	$rankString
+			] = evt.detail"
+		>
+			<h2 data-grid="pnm" data-text="$personaName"></h2>
+			<span data-grid="acc">ID: <span data-text="$accountId"></span></span>
+			<img data-grid="avt" data-attr="{src: $steamAvatar, alt:`${$personaname}'s steam avatar`}">
+			<img data-grid="mdl" data-attr="{src: $rankMedal, alt:$rankString}">
+			<span data-grid="rnk" data-text="$rankString"></span>
+		</section>
 		<div>
 			<label for="search-input">Enter a 8-digit steam account-id or a persona-name</label>
 			<input type="text" data-bind:search-term data-init="$searchTerm = ''" 

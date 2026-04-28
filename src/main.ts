@@ -1,9 +1,9 @@
 import axios from 'axios';
 import type { AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
-import { formatMatchSummary, formatRankDistribution, heroLabels, type Benchmark, type FullMatch, type PlayerMatchSummary, type RankDistribution, type SparseMatch } from './modules/bindings.js';
+import { formatMatchSummary, formatRankDistribution, heroLabels, RANK_NAMES, type Benchmark, type FullMatch, type PlayerMatchSummary, type RankDistribution, type SparseMatch } from './modules/bindings.js';
 import { assert, getLocalOrSet, setLocal, tryGetElement, tryGetJson, tryGetLocal, type NamedElement, type Result, type UnixTimestamp } from './modules/flow.js';
 import { PATHS } from './modules/paths.js';
-import { type Distributions, type AccountId, type Player, type SearchResult, type MatchForPlayer, leaverStatusByKey, LEAVER_STATUS } from './types/OpenDotaTypes.js'
+import { type Distributions, type AccountId, type Player, type SearchResult, type MatchForPlayer, leaverStatusByKey, LEAVER_STATUS, type RankBitmask } from './types/OpenDotaTypes.js'
 
 // @ts-expect-error (only required for TypeScript projects)
 import 'https://cdn.jsdelivr.net/gh/starfederation/datastar@v1.0.1/bundles/datastar.js'
@@ -86,6 +86,30 @@ function updateCallsLeft(callsToSubtract?: number): void {
 	document.dispatchEvent( new CustomEvent('callsleftupdate', evtObj))
 }
 
+function setProfile(player: Player) {
+	const {personaname, account_id} = player.profile
+	const {avatar, avatarmedium, avatarfull} = player.profile
+	const selImg = avatarfull ? avatarfull : (avatarmedium ? avatarmedium : avatar)
+	const rankMedal = getMedalImgPath(player.rank_tier)
+	const rankTitle = getRankTitle(player.rank_tier, player.leaderboard_rank)
+	const evtObj = {detail: [personaname, account_id, selImg, rankMedal, rankTitle]}
+	document.dispatchEvent(new CustomEvent('profileupdate', evtObj))
+}
+// TODO: We get leaderboard position for immortal players as well, so we could
+// overlay a number on their medal plaque in the future.
+function getMedalImgPath(rank: RankBitmask | null) {
+	const suffix = !rank ? '0' : rank.toString()
+	return `${PATHS.IMG.MEDALS}/rank${suffix}.webp`
+}
+function getRankTitle(rank: RankBitmask | null, leaderboardPos: number | null): string {
+	if(!rank) {
+		return 'uncalibrated'
+	}
+	const star = rank % 10
+	const medal = RANK_NAMES[(rank - star) / 10]
+	return `${medal} ${medal != 'immortal' ? star : leaderboardPos}`
+}
+
 // page flow -> search accounts -> provide sample account ids.
 // show match summary for recent matches. Let user click match.
 // show match details with focus on account hero. Let user request parse if match is not parsed.
@@ -96,6 +120,7 @@ async function searchTypedAccount(searchTerm: string | AccountId) {
 	on the datastructure. */
 	const playerResponse = await tryGetPlayer(searchTerm)
 	const player = playerResponse.data
+	setProfile(player)
 	const matchesResponse = await tryGetMatches(player.profile.account_id)
 	const matchHistory: PlayerMatchSummary[] = matchesResponse.data.map(match => 
 		formatMatchSummary(match, player.profile.account_id)
