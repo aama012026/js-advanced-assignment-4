@@ -16,11 +16,11 @@
 <body>
 	<header>
 		<h1>Clarity</h1>
-		<section id="calls-left" data-signals="{callsLeft: {minute: 60, day: 3000}}" data-on:ratelimitchange__document="$callsLeft = evt.detail">
+		<section id="calls-left" data-signals:calls-used="0" data-on:ratelimitchange__document="$callsUsed += evt.detail.count">
 			<h2>API calls remaining</h2>
 			<div class="flex-row">
-				<div class="epic box"><span>minute: </span><span data-text="$callsLeft.minute"></span></div>
-				<div class="rare box"><span>today: </span><span data-text="$callsLeft.day"></span></div>
+				<div class="epic box"><span>minute: </span><span data-text="60 - $callsUsed"></span></div>
+				<div class="rare box"><span>today: </span><span data-text="3000 - $callsUsed"></span></div>
 			</div>
 		</section>
 	</header>

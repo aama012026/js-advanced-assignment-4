@@ -1,7 +1,7 @@
 import axios from 'axios';
 import type { AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
 import { formatMatchSummary, formatRankDistribution, heroLabels, type Benchmark, type FullMatch, type PlayerMatchSummary, type RankDistribution, type SparseMatch } from './modules/bindings.js';
-import { assert, setLocal, tryGetElement, tryGetJson, tryGetLocal, type NamedElement, type Result } from './modules/flow.js';
+import { assert, getLocalOrSet, setLocal, tryGetElement, tryGetJson, tryGetLocal, type NamedElement, type Result, type UnixTimestamp } from './modules/flow.js';
 import { PATHS } from './modules/paths.js';
 import { type Distributions, type AccountId, type Player, type SearchResult, type MatchForPlayer, leaverStatusByKey, LEAVER_STATUS } from './types/OpenDotaTypes.js'
 
@@ -13,7 +13,7 @@ axios.defaults.allowAbsoluteUrls = false
 
 const ENDPOINT = {
 	MATCHES: '/matches',
-	PlAYERS: '/players',
+	PLAYERS: '/players',
 	TOP_PlAYERS:'/topPlayers',
 	PRO_PLAYERS: '/proPlayers',
 	PRO_MATCHES: '/ProMatches',
@@ -40,12 +40,11 @@ const ENDPOINT = {
 } as const
 
 const LocalDataKey = {
+	CALL_LIMIT_TIMESTAMPS: 'callLimitTimestamps'
 	RankDistribution: 'rankDistribution',
 	Benchmarks: 'benchmarks',
 	StoredMatches: 'storedMatches',
 } as const
-
-// TODO: We removed the manual call count as we can get the remaining calls from response headers.
 
 // INIT
 let benchmarks = tryGetLocal<Benchmark[]>(LocalDataKey.Benchmarks)
@@ -57,74 +56,77 @@ const templates = {
 const sections = {
 	matchHistory: tryGetElement<HTMLDivElement>('#match-history')
 }
-
-function updateCallsLeft(leftDay: number, leftMinute: number): void {
-	document.dispatchEvent( new CustomEvent('ratelimitchange', {detail:  {minute: leftMinute, day: leftDay}}))
+interface CallsLeft {
+	minute: {left: number, sinceWhen: UnixTimestamp},
+	today: {left: number, sinceWhen: UnixTimestamp}
 }
-updateCallsLeft(2859, 58)
+const calls = getLocalOrSet<CallsLeft>(
+	LocalDataKey.CALL_LIMIT_TIMESTAMPS, {
+		minute: {left: 60, sinceWhen: Date.now() as UnixTimestamp},
+		today: {left: 3000, sinceWhen: Date.now() as UnixTimestamp}
+	}
+)
+
+function updateCallsLeft(callsToSubtract?: number): void {
+	const count = callsToSubtract ? callsToSubtract : 1
+	const now = Date.now() as UnixTimestamp
+	// This is wrong as we also need to update timestamp!
+	calls.minute.left = (now - calls.minute.sinceWhen > 60000) ? 
+		60 - count : calls.minute.left - count 
+	calls.today.left =(now - calls.today.sinceWhen > 86400000) ?
+		3000 - count : calls.today.left - count
+	
+	const evtObj = {detail:  {min: calls.minute.left, day: calls.today.left}}
+	document.dispatchEvent( new CustomEvent('ratelimitchange', evtObj))
+}
 
 // page flow -> search accounts -> provide sample account ids.
 // show match summary for recent matches. Let user click match.
 // show match details with focus on account hero. Let user request parse if match is not parsed.
 async function searchTypedAccount(searchTerm: string | AccountId) {
-	const playerResult = await tryGetPlayer(searchTerm)
-	
-	if(!playerResult.ok) {
-		console.error(playerResult.msg)
-	}
-	else {
-		console.log(playerResult.msg)
-		console.log(JSON.stringify(playerResult.data))
-		const player = playerResult.data!
-		const matchesResult = await tryGetMatches(player.profile.account_id!)
-		if(!matchesResult.ok) {
-			console.error(matchesResult.msg)
-		}
-		else {
-			console.log(JSON.stringify(matchesResult.data))
-			const matchHistory: PlayerMatchSummary[] = matchesResult.data!.map(match => 
-				formatMatchSummary(match, player.profile.account_id)
-			)
-			sections.matchHistory.replaceChildren(
-				document.importNode(templates.matchHistory.content, true)
-			)
-			const matchHistoryBody = sections.matchHistory.querySelector('tbody')
-			matchHistory.forEach(match => 
-				matchHistoryBody!.append(createMatchSummary(match))
-			)
-		}
-	}
+	/* TODO: Restructure validation and error for axios.
+	Axios throws errors (usually rejecting the promise). Our validation
+	should be simple catches initially. Any advanced validation we do should be
+	on the datastructure. */
+	const playerResponse = await tryGetPlayer(searchTerm)
+	console.log(JSON.stringify(playerResponse, null, '\t' ))
+	const player = playerResponse.data
+	const matchesResponse = await tryGetMatches(player.profile.account_id)
+	console.log(JSON.stringify(matchesResponse, null, '\t'))
+	const matchHistory: PlayerMatchSummary[] = matchesResponse.data.map(match => 
+		formatMatchSummary(match, player.profile.account_id)
+	)
+	const fragment = document.importNode(templates.matchHistory.content, true)
+	sections.matchHistory.replaceChildren(fragment)
+	const matchHistoryBody = sections.matchHistory.querySelector('tbody')
+	matchHistory.forEach(match => 
+		matchHistoryBody!.append(createMatchSummary(match))
+	)
 }
+// We need to make the function available in the DOM for datastar. 
 (window as any).searchTypedAccount = searchTypedAccount
 
-async function tryGetPlayer(idOrPersona: AccountId | string): Promise<Result<Player>> {
+async function tryGetPlayer(idOrPersona: AccountId | string): Promise<AxiosResponse> {
 	let accountId: number
 	if(typeof idOrPersona === 'string') {
 		// url.search = `?q=${idOrPersona}`
-		const response = await axios.get<Player>(ENDPOINT.SEARCH, {params: {q: idOrPersona}})
-		if(response.status != 200) {
-			return {
-				data: null,
-				ok: false,
-				msg: `Could not get search result for ${idOrPersona}.\ntryGetJson failed with msg:\n${response.msg}`
-			}
-		} else if(!response.data) {
-			return {
-				data: null,
-				ok: false,
-			}
+		const response = await axios.get<SearchResult[]>(ENDPOINT.SEARCH, {params: {q: idOrPersona}})
+		updateCallsLeft()
+		if(!response.data[0].account_id) {
+			return response
 		}
-		accountId = assert(response.data![0], 'result.data![0]', `Could not get user for persona ${idOrPersona}`).account_id
+		accountId = response.data[0].account_id
 	}
 	else {
 		accountId = idOrPersona
 	}
-	const result = await tryGetJson<Player>(new URL(`${ENDPOINT.players}/${accountId}`, HOST))
-	return result
+	const response = await axios.get<Player>(`${ENDPOINT.PLAYERS}/${accountId}`)
+	updateCallsLeft()
+	return response
 }
 
-async function tryGetMatches(id: AccountId): Promise<Result<MatchForPlayer[]>> {
-	return await tryGetJson<MatchForPlayer[]>(new URL(`${ENDPOINT.players}/${id}/recentMatches`))
+async function tryGetMatches(id: AccountId): Promise<AxiosResponse<MatchForPlayer[]>> {
+	return await axios.get<MatchForPlayer[]>(`${ENDPOINT.PLAYERS}/${id}/matches`)
 }
 
 async function tryGetMatch(matchId: number): Promise<SparseMatch | FullMatch | null> {
@@ -132,7 +134,7 @@ async function tryGetMatch(matchId: number): Promise<SparseMatch | FullMatch | n
 	if(match) {
 		return match
 	}
-	const result = await tryGetJson<SparseMatch | FullMatch>(new URL(`${ENDPOINT.matches}/${matchId}`))
+	const result = await tryGetJson<SparseMatch | FullMatch>(new URL(`${ENDPOINT.MATCHES}/${matchId}`))
 	if(!result.ok) {
 		return null
 	}
@@ -141,7 +143,7 @@ async function tryGetMatch(matchId: number): Promise<SparseMatch | FullMatch | n
 }
 
 async function requestParse(matchId: number) {
-	const result = await tryGetJson<unknown>(new URL(`${ENDPOINT.request}/${matchId}`), {method: 'POST', headers: {'Content-Type': 'application/json'}})
+	const result = await tryGetJson<unknown>(new URL(`${ENDPOINT.REQUEST}/${matchId}`), {method: 'POST', headers: {'Content-Type': 'application/json'}})
 	if(!result.ok) {
 		return null
 	}
@@ -152,9 +154,9 @@ async function tryGetRankDistribution(): Promise<RankDistribution | null> {
 	let rankDistribution = tryGetLocal<RankDistribution>(LocalDataKey.RankDistribution)
 	// Try to get from localstorage first, fetch if not present or stale (here 24H shelf life).
 	if(!(rankDistribution && new Date().getHours() - new Date(rankDistribution.timestamp).getHours() <= 24)) {
-		const result = await tryGetJson<Distributions>(ENDPOINT.distributions)
-		if(result.ok) {
-			rankDistribution = formatRankDistribution(assert(result.data, 'result.data', 'Could not format rank distribution'))
+		const result = await axios.get<Distributions>(ENDPOINT.DISTRIBUTIONS)
+		if(result.status != 200) {
+			rankDistribution = formatRankDistribution(result.data)
 			setLocal<RankDistribution>(LocalDataKey.RankDistribution, rankDistribution)
 		}
 	}
