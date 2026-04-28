@@ -1390,3 +1390,14 @@ export const StructureKeysByExtId = Object.fromEntries(
 export const Structures = Object.fromEntries(
 	STRUCTURE_IDS.map(structure => [structure.key, structure.label])
 ) as Record<StructureKey, StructureName>
+
+export const RANK_NAMES = {
+	1: 'herald',
+	2: 'guardian',
+	3: 'crusader',
+	4: 'archon',
+	5: 'legend',
+	6: 'ancient',
+	7: 'divine',
+	8: 'immortal'
+} as Record<number, string>

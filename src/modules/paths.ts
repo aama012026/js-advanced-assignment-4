@@ -1,12 +1,13 @@
 export const DIR = {
 	BUILD: `public`,
 	GENERATED: `generated`,
-	STATIC: `static`,
+	STATIC: 'static',
 	DATA: `data`,
 	IMG: `img`,
 	HEROES: `heroes`,
 	ITEMS: `items`,
-	ABILITIES: `abilities`
+	ABILITIES: `abilities`,
+	MEDALS: 'medals'
 } as const
 const IMG_PATH = `${DIR.GENERATED}/${DIR.IMG}`
 
@@ -15,7 +16,8 @@ export const PATHS = {
 	IMG: {
 		HEROES: `${IMG_PATH}/${DIR.HEROES}`,
 		ITEMS: `${IMG_PATH}/${DIR.ITEMS}`,
-		ABILITIES: `${IMG_PATH}/${DIR.ABILITIES}`
+		ABILITIES: `${IMG_PATH}/${DIR.ABILITIES}`,
+		MEDALS: `${DIR.STATIC}/${DIR.IMG}/${DIR.MEDALS}`
 	}
 } as const
 
