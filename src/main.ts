@@ -40,7 +40,7 @@ const ENDPOINT = {
 } as const
 
 const LocalDataKey = {
-	CALL_LIMIT_TIMESTAMPS: 'callLimitTimestamps'
+	CALL_LIMIT_TIMESTAMPS: 'callLimitTimestamps',
 	RankDistribution: 'rankDistribution',
 	Benchmarks: 'benchmarks',
 	StoredMatches: 'storedMatches',
@@ -66,18 +66,26 @@ const calls = getLocalOrSet<CallsLeft>(
 		today: {left: 3000, sinceWhen: Date.now() as UnixTimestamp}
 	}
 )
-
+// We dispatch the update event without change once to echo loaded object.
+updateCallsLeft(0)
 function updateCallsLeft(callsToSubtract?: number): void {
-	const count = callsToSubtract ? callsToSubtract : 1
+	const count = callsToSubtract != null ? callsToSubtract : 1
 	const now = Date.now() as UnixTimestamp
 	// This is wrong as we also need to update timestamp!
-	calls.minute.left = (now - calls.minute.sinceWhen > 60000) ? 
-		60 - count : calls.minute.left - count 
-	calls.today.left =(now - calls.today.sinceWhen > 86400000) ?
-		3000 - count : calls.today.left - count
-	
-	const evtObj = {detail:  {min: calls.minute.left, day: calls.today.left}}
-	document.dispatchEvent( new CustomEvent('ratelimitchange', evtObj))
+	if(now - calls.minute.sinceWhen > 60000){
+		calls.minute.left = 60
+		calls.minute.sinceWhen = Date.now() as UnixTimestamp
+	}
+	if(now - calls.today.sinceWhen > 86400000) {
+		calls.today.left = 3000
+		calls.today.sinceWhen = Date.now() as UnixTimestamp
+	}
+	calls.minute.left = Math.max(calls.minute.left - count, 0)
+	calls.today.left = Math.max(calls.today.left - count, 0)
+	setLocal<CallsLeft>(LocalDataKey.CALL_LIMIT_TIMESTAMPS, calls)
+	const evtObj = {detail:  {minute: calls.minute.left, today: calls.today.left}}
+	console.log(JSON.stringify(evtObj))
+	document.dispatchEvent( new CustomEvent('callsleftupdate', evtObj))
 }
 
 // page flow -> search accounts -> provide sample account ids.
@@ -89,10 +97,8 @@ async function searchTypedAccount(searchTerm: string | AccountId) {
 	should be simple catches initially. Any advanced validation we do should be
 	on the datastructure. */
 	const playerResponse = await tryGetPlayer(searchTerm)
-	console.log(JSON.stringify(playerResponse, null, '\t' ))
 	const player = playerResponse.data
 	const matchesResponse = await tryGetMatches(player.profile.account_id)
-	console.log(JSON.stringify(matchesResponse, null, '\t'))
 	const matchHistory: PlayerMatchSummary[] = matchesResponse.data.map(match => 
 		formatMatchSummary(match, player.profile.account_id)
 	)
