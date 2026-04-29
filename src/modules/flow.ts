@@ -77,6 +77,12 @@ export const RESPONSE_CODES: Record<number, string> = {
 	511: 'Network Authentication Required'
 }
 
+export function stripNulls<T extends object>(obj: T): T {
+	return Object.fromEntries(
+		Object.entries(obj).filter(([, v]) => v != null)
+	) as T
+}
+
 export function getLocalOrSet<T>(key: string, defaultValue: T): T {
 	return ((item) => item ? JSON.parse(item) : defaultValue)(localStorage.getItem(key))
 }
