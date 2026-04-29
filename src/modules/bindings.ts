@@ -330,9 +330,22 @@ function bindSteamDetails(profile: OdotaProfile): SteamDetails | undefined {
 // We discard the derived data as it is trivial to calculate and would
 // double the size.
 export function formatRankDistribution(distributions: Distributions) {
+	const DIVISIONS = 4
+	const TOP1 = 1 * DIVISIONS
+	const TOP10 = 10 * DIVISIONS - TOP1
+	const TOP100 = 100 * DIVISIONS - (TOP1 + TOP10)
+	const TOP1000 = 1000 * DIVISIONS - (TOP1 + TOP10 + TOP100)
+
 	const ranks: RankStats[] = distributions.ranks.rows.map(rank => {
 		return {rank: rank.bin as RankBitmask, count: rank.count}
 	});
+	ranks[ranks.length-1].count -= 1000 * DIVISIONS
+	ranks.push(
+		{rank: 82 as RankBitmask, count: TOP1000},
+		{rank: 83 as RankBitmask, count: TOP100},
+		{rank: 84 as RankBitmask, count: TOP10},
+		{rank: 85 as RankBitmask, count: TOP1},
+	)
 	return {
 		ranks: ranks,
 		timestamp: new Date().toISOString() as ISO8601TimeString

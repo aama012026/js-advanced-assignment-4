@@ -20,7 +20,7 @@ export type xPos = number
 export type yPos = number
 
 export interface OdotaPlayer {
-	profile: Profile,
+	profile: OdotaProfile,
 	rank_tier: RankBitmask | null,
 	leaderboard_rank: number | null,
 	computed_mmr?: number | null, // computed_mmr_turbo is not present in normal ranked. The opposite will prob. be true
@@ -41,7 +41,7 @@ export interface OdotaSearchResult {
 	similarity: number
 }
 
-export interface PartialProfile {
+export interface OdotaPartialProfile {
 	account_id: AccountId,
 	personaname: string | null,
 	name: string | null,
@@ -49,7 +49,7 @@ export interface PartialProfile {
 	is_subscriber: boolean // to opendota
 }
 
-export interface Profile extends PartialProfile {
+export interface OdotaProfile extends OdotaPartialProfile {
 	plus: boolean, //current Dota Plus status
 	cheese: number | null, // number is int
 	steamId: SteamId | null, //16-digit string or null

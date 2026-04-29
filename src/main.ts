@@ -1,9 +1,9 @@
 import axios from 'axios';
 import type { AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
-import { formatMatchSummary, formatRankDistribution, heroLabels, RANK_NAMES, type Benchmark, type FullMatch, type PlayerMatchSummary, type RankDistribution, type SparseMatch } from './modules/bindings.js';
+import { bindPlayer, formatMatchSummary, formatRankDistribution, heroLabels, RANK_NAMES, type Benchmark, type FullMatch, type Player, type PlayerMatchSummary, type RankDistribution, type SparseMatch } from './modules/bindings.js';
 import { assert, getLocalOrSet, setLocal, tryGetElement, tryGetJson, tryGetLocal, type NamedElement, type Result, type UnixTimestamp } from './modules/flow.js';
 import { PATHS } from './modules/paths.js';
-import { type Distributions, type AccountId, type Player, type SearchResult, type MatchForPlayer, leaverStatusByKey, LEAVER_STATUS, type RankBitmask } from './types/OpenDotaTypes.js'
+import { type Distributions, type AccountId, type OdotaPlayer, type OdotaSearchResult, type MatchForPlayer, leaverStatusByKey, LEAVER_STATUS, type RankBitmask } from './types/OpenDotaTypes.js'
 
 // @ts-expect-error (only required for TypeScript projects)
 import 'https://cdn.jsdelivr.net/gh/starfederation/datastar@v1.0.1/bundles/datastar.js'
@@ -48,6 +48,7 @@ const LocalDataKey = {
 // INIT
 let benchmarks = tryGetLocal<Benchmark[]>(LocalDataKey.Benchmarks)
 
+
 const templates = {
 	matchHistory: tryGetElement<HTMLTemplateElement>('#match-history-template'),
 	matchSummary: tryGetElement<HTMLTemplateElement>('#match-summary-template')
@@ -67,6 +68,10 @@ const calls = getLocalOrSet<CallsLeft>(
 )
 // We dispatch the update event without change once to echo loaded object.
 updateCallsLeft(0)
+const rankDistribution = await tryGetRankDistribution()
+console.log(JSON.stringify(rankDistribution))
+
+// Functions
 function updateCallsLeft(callsToSubtract?: number): void {
 	const count = callsToSubtract != null ? callsToSubtract : 1
 	const now = Date.now() as UnixTimestamp
@@ -82,26 +87,27 @@ function updateCallsLeft(callsToSubtract?: number): void {
 	calls.today.left = Math.max(calls.today.left - count, 0)
 	setLocal<CallsLeft>(LocalDataKey.CALL_LIMIT_TIMESTAMPS, calls)
 	const evtObj = {detail:  {minute: calls.minute.left, today: calls.today.left}}
-	console.log(JSON.stringify(evtObj))
 	document.dispatchEvent( new CustomEvent('callsleftupdate', evtObj))
 }
 
 function setProfile(player: Player) {
-	const {personaname, account_id} = player.profile
-	const {avatar, avatarmedium, avatarfull} = player.profile
-	const selImg = avatarfull ? avatarfull : (avatarmedium ? avatarmedium : avatar)
-	const rankMedal = getMedalImgPath(player.rank_tier)
-	const rankTitle = getRankTitle(player.rank_tier, player.leaderboard_rank)
-	const evtObj = {detail: [personaname, account_id, selImg, rankMedal, rankTitle]}
+	const {id, personaName} = player.profile.account
+	const avatar = player.profile.steam?.avatar
+	const selImg = avatar?.full ? avatar?.full : (
+		avatar?.medium ? avatar.medium : avatar?.small
+	)
+	const rankMedal = getMedalImgPath(player.rank)
+	const rankTitle = getRankTitle(player.rank, player.leaderboardPos)
+	const evtObj = {detail: [personaName, id, selImg, rankMedal, rankTitle]}
 	document.dispatchEvent(new CustomEvent('profileupdate', evtObj))
 }
 // TODO: We get leaderboard position for immortal players as well, so we could
 // overlay a number on their medal plaque in the future.
-function getMedalImgPath(rank: RankBitmask | null) {
+function getMedalImgPath(rank: RankBitmask | undefined) {
 	const suffix = !rank ? '0' : rank.toString()
 	return `${PATHS.IMG.MEDALS}/rank${suffix}.webp`
 }
-function getRankTitle(rank: RankBitmask | null, leaderboardPos: number | null): string {
+function getRankTitle(rank: RankBitmask | undefined, leaderboardPos?: number): string {
 	if(!rank) {
 		return 'uncalibrated'
 	}
@@ -118,12 +124,15 @@ async function searchTypedAccount(searchTerm: string | AccountId) {
 	Axios throws errors (usually rejecting the promise). Our validation
 	should be simple catches initially. Any advanced validation we do should be
 	on the datastructure. */
-	const playerResponse = await tryGetPlayer(searchTerm)
-	const player = playerResponse.data
+	const playerResult = await tryGetPlayer(searchTerm)
+	if(!playerResult.ok || !playerResult.data) {
+		throw new Error(`could not get player data for ${searchTerm}`)
+	}
+	const player = playerResult.data
 	setProfile(player)
-	const matchesResponse = await tryGetMatches(player.profile.account_id)
+	const matchesResponse = await tryGetMatches(player.profile.account.id)
 	const matchHistory: PlayerMatchSummary[] = matchesResponse.data.map(match => 
-		formatMatchSummary(match, player.profile.account_id)
+		formatMatchSummary(match, player.profile.account.id)
 	)
 	const fragment = document.importNode(templates.matchHistory.content, true)
 	sections.matchHistory.replaceChildren(fragment)
@@ -135,23 +144,23 @@ async function searchTypedAccount(searchTerm: string | AccountId) {
 // We need to make the function available in the DOM for datastar. 
 (window as any).searchTypedAccount = searchTypedAccount
 
-async function tryGetPlayer(idOrPersona: AccountId | string): Promise<AxiosResponse> {
+async function tryGetPlayer(idOrPersona: AccountId | string): Promise<Result<Player>> {
 	let accountId: number
 	if(typeof idOrPersona === 'string') {
 		// url.search = `?q=${idOrPersona}`
-		const response = await axios.get<SearchResult[]>(ENDPOINT.SEARCH, {params: {q: idOrPersona}})
+		const response = await axios.get<OdotaSearchResult[]>(ENDPOINT.SEARCH, {params: {q: idOrPersona}})
 		updateCallsLeft()
 		if(!response.data[0].account_id) {
-			return response
+			return {ok: false}
 		}
 		accountId = response.data[0].account_id
 	}
 	else {
 		accountId = idOrPersona
 	}
-	const response = await axios.get<Player>(`${ENDPOINT.PLAYERS}/${accountId}`)
+	const response = await axios.get<OdotaPlayer>(`${ENDPOINT.PLAYERS}/${accountId}`)
 	updateCallsLeft()
-	return response
+	return {ok: true, data: bindPlayer(response.data)}
 }
 
 async function tryGetMatches(id: AccountId): Promise<AxiosResponse<MatchForPlayer[]>> {
@@ -180,18 +189,19 @@ async function requestParse(matchId: number): Promise<AxiosResponse> {
 	return response
 }
 
-async function tryGetRankDistribution(): Promise<RankDistribution | null> {
+async function tryGetRankDistribution(): Promise<Result<RankDistribution>> {
 	let rankDistribution = tryGetLocal<RankDistribution>(LocalDataKey.RankDistribution)
 	// Try to get from localstorage first, fetch if not present or stale (here 24H shelf life).
 	if(!(rankDistribution && new Date().getHours() - new Date(rankDistribution.timestamp).getHours() <= 24)) {
 		const result = await axios.get<Distributions>(ENDPOINT.DISTRIBUTIONS)
 		updateCallsLeft()
 		if(result.status != 200) {
-			rankDistribution = formatRankDistribution(result.data)
-			setLocal<RankDistribution>(LocalDataKey.RankDistribution, rankDistribution)
+			return {ok: false}
 		}
+		rankDistribution = formatRankDistribution(result.data)
+		setLocal<RankDistribution>(LocalDataKey.RankDistribution, rankDistribution)
 	}
-	return rankDistribution
+	return {ok: true, data: rankDistribution}
 }
 
 // async function tryGetBenchmarks(hero: HeroId) {
