@@ -102,13 +102,13 @@ export function setLocal<T>(key: string, value: T) {
 }
 
 export interface Result<T> {
-	data: T | null,
 	ok: boolean,
+	data?: T,
 	msg?: string
 }
 
 export async function tryGetJson<T>(url: URL, requestInit?: RequestInit): Promise<Result<T>> {
-	const result: Result<T> = {data: null, ok: false}
+	const result: Result<T> = {ok: false}
 	try {
 		console.log(`Fetching ${url}...`)
 		const response = requestInit? await fetch(url, requestInit) : await fetch(url)
@@ -123,7 +123,6 @@ export async function tryGetJson<T>(url: URL, requestInit?: RequestInit): Promis
 	}
 	catch (error) {
 		return {
-			data: null,
 			ok: false,
 			msg: error instanceof Error ? `tryGetJson failed for url: ${url}\n${error.message}` : `tryGetJson failed unexpectedly for url: ${url}`
 		}
@@ -131,7 +130,7 @@ export async function tryGetJson<T>(url: URL, requestInit?: RequestInit): Promis
 }
 
 export async function tryGetImg(url: URL, logName?: string):Promise<Result<ArrayBuffer>> {
-	const result: Result<ArrayBuffer> = {data: null, ok: false}
+	const result: Result<ArrayBuffer> = {ok: false}
 	try {
 		console.log(`Fetching ${logName ? logName : url}`)
 		const response = await fetch(url)
@@ -147,7 +146,6 @@ export async function tryGetImg(url: URL, logName?: string):Promise<Result<Array
 	}	
 	catch (error) {
 		return {
-			data: null,
 			ok: false,
 			msg: error instanceof Error ? `tryGetImg failed for url: ${url}\n${error.message}` : `tryGetImg failed unexpectedly for url: ${url}`
 		}
