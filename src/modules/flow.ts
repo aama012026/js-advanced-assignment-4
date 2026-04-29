@@ -77,10 +77,13 @@ export const RESPONSE_CODES: Record<number, string> = {
 	511: 'Network Authentication Required'
 }
 
-export function stripNulls<T extends object>(obj: T): T {
+type NullsAsUndefined<T> = {
+	[K in keyof T]: null extends T[K] ? Exclude<T[K], null> | undefined : T[K];
+}	
+export function nullsToUndefined<T extends object>(obj: T): NullsAsUndefined<T> {
 	return Object.fromEntries(
-		Object.entries(obj).filter(([, v]) => v != null)
-	) as T
+		Object.entries(obj).map(([k, v]) => [k, v ?? undefined])
+	) as NullsAsUndefined<T>
 }
 
 export function getLocalOrSet<T>(key: string, defaultValue: T): T {
