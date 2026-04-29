@@ -1,13 +1,13 @@
-import type { ISO8601TimeString, Unique } from "./flow.js"
+import { isEmpty, nullsToUndefined, type ISO8601TimeString, type Unique } from "./flow.js"
 import type { GameModeId, LobbyTypeId, PatchId, RegionId, 
 	UnitOrderId
 } from "../types/DotaConstantsTypes.js"
 import { BARRACK_FLAGS, TOWER_FLAGS, type AccountId, type BarracksBitmask,
 	type Cosmetic, type Distributions, type GoldReasonId, type InGamePlayer,
 	type LeagueId, type LeaverStatus, type MatchForPlayer, type MatchId,
-	type OdotaParsedPlayer, type OdotaWardLogEntry, type ParsedMatch, type PartyId,
+	type OdotaParsedPlayer, type OdotaPlayer, type OdotaProfile, type OdotaSteamAlias, type OdotaWardLogEntry, type ParsedMatch, type PartyId,
 	type Pause, type Percentile, type PickBan, type PlayerSlot, type RankBitmask,
-	type SeriesId, type TowersBitmask, type UnparsedMatch, type XpReasonId
+	type SeriesId, type SteamId, type TowersBitmask, type UnparsedMatch, type XpReasonId
 } from "../types/OpenDotaTypes.js"
 import type { IdBinding } from "../types/BoundTypes.js"
 import { FILES, PATHS } from "./paths.js"
@@ -227,6 +227,104 @@ export interface RankStats {
 export interface RankDistribution {
 	ranks: RankStats[],
 	timestamp: ISO8601TimeString
+}
+
+export interface OpenDotaMembership {
+	isContributor?: boolean,
+	isSubscriber?: boolean
+}
+export interface SteamAlias {
+	personaName: string,
+	since: ISO8601TimeString
+}
+
+function mapSteamAliases(aliases: OdotaSteamAlias[]): SteamAlias[] {
+	return aliases.map(({personaname, name_since}) => {
+		return {personaName: personaname, since: name_since}
+	})
+}
+
+export interface Account {
+	id: AccountId,
+	personaName?: string,
+	name?: string,
+	oDota?: OpenDotaMembership
+}
+
+export interface SteamDetails {
+	id?: SteamId,
+	avatar?: {
+		small?: string,
+		medium?: string,
+		full?: string
+	},
+	url?: string,
+	lastLogin?: string,
+	countryCode?: string,
+	status?: unknown,
+	fullHistoryUnavailable?: boolean
+}
+
+export interface Profile {
+	account: Account,
+	steam?: SteamDetails,
+	isDotaPlusSub?: boolean,
+}
+
+export interface Player {
+	profile: Profile,
+	rank?: RankBitmask,
+	leaderboardPos?: number,
+	mmrGuess?: {
+		normal?: number,
+		turbo?: number
+	},
+	aliases: SteamAlias[]
+}
+
+export function bindPlayer(player: OdotaPlayer): Player {
+	return {
+		profile: bindProfile(player.profile),
+		rank: player.rank_tier ?? undefined,
+		leaderboardPos: player.leaderboard_rank ?? undefined,
+		mmrGuess: ((obj => isEmpty(obj) ? undefined : obj))(nullsToUndefined({
+			normal: player.computed_mmr,
+			turbo: player.computed_mmr_turbo
+		})),
+		aliases: mapSteamAliases(player.aliases)
+	}
+}
+
+function bindProfile(profile: OdotaProfile): Profile {
+	return {
+		account: nullsToUndefined({
+			id: profile.account_id,
+			personaName: profile.personaname,
+			name: profile.name,
+			oDota: (obj => isEmpty(obj) ? undefined : obj)({
+				isSubscriber: profile.is_subscriber ?? undefined,
+				isContributor: profile.is_contributor ?? undefined
+			}),
+		}),
+		steam: bindSteamDetails(profile),
+		isDotaPlusSub: profile.plus ? true : undefined
+	}
+}
+function bindSteamDetails(profile: OdotaProfile): SteamDetails | undefined {
+	const details: SteamDetails = nullsToUndefined({
+		id: profile.steamId,
+		avatar: (obj => isEmpty(obj) ? undefined : obj)(nullsToUndefined({
+			small: profile.avatar,
+			medium: profile.avatarmedium,
+			full: profile.avatarfull
+		})),
+		url: profile.profileurl,
+		lastLogin: profile.last_login,
+		countryCode: profile.loccountrycode,
+		status: profile.status,
+		fullHistoryUnavailable: profile.fh_unavailable
+	})
+	return isEmpty(details) ? undefined : details
 }
 
 // We discard the derived data as it is trivial to calculate and would

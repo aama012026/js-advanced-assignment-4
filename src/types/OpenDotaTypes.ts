@@ -19,21 +19,21 @@ export type XpReasonId = Unique<number, 'xpReason'>
 export type xPos = number
 export type yPos = number
 
-export interface Player {
+export interface OdotaPlayer {
 	profile: Profile,
 	rank_tier: RankBitmask | null,
 	leaderboard_rank: number | null,
 	computed_mmr?: number | null, // computed_mmr_turbo is not present in normal ranked. The opposite will prob. be true
 	computed_mmr_turbo?: number | null,
-	aliases: SteamAlias[],
+	aliases: OdotaSteamAlias[],
 }
 
-export interface SteamAlias {
+export interface OdotaSteamAlias {
 	personaname: string,
 	name_since: ISO8601TimeString
 }
 
-export interface SearchResult {
+export interface OdotaSearchResult {
 	account_id: AccountId,
 	avatarfull: string,
 	personaname: string,
