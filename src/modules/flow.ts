@@ -86,7 +86,7 @@ export function nullsToUndefined<T extends object>(obj: T): NullsAsUndefined<T> 
 	) as NullsAsUndefined<T>
 }
 export function isEmpty<T extends object>(obj: T): boolean {
-	return Object.values(obj).some(v => !v)
+	return !Object.values(obj).some(v => !!v)
 }
 
 export function getLocalOrSet<T>(key: string, defaultValue: T): T {
