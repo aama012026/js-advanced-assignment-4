@@ -85,6 +85,9 @@ export function nullsToUndefined<T extends object>(obj: T): NullsAsUndefined<T> 
 		Object.entries(obj).map(([k, v]) => [k, v ?? undefined])
 	) as NullsAsUndefined<T>
 }
+export function isEmpty<T extends object>(obj: T): boolean {
+	return Object.values(obj).some(v => !v)
+}
 
 export function getLocalOrSet<T>(key: string, defaultValue: T): T {
 	return ((item) => item ? JSON.parse(item) : defaultValue)(localStorage.getItem(key))
