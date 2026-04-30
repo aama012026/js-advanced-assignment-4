@@ -3,7 +3,7 @@ import type { GameModeId, LobbyTypeId, PatchId, RegionId,
 	UnitOrderId
 } from "../types/DotaConstantsTypes.js"
 import { BARRACK_FLAGS, TOWER_FLAGS, type AccountId, type BarracksBitmask,
-	type Cosmetic, type Distributions, type GoldReasonId, type InGamePlayer,
+	type Cosmetic, type Distributions, type GoldReasonId, type OdotaUnparsedPlayer,
 	type LeagueId, type LeaverStatus, type MatchForPlayer, type MatchId,
 	type OdotaParsedPlayer, type OdotaPlayer, type OdotaProfile, type OdotaSteamAlias, type OdotaWardLogEntry, type ParsedMatch, type PartyId,
 	type Pause, type Percentile, type PickBan, type PlayerSlot, type RankBitmask,
@@ -446,14 +446,14 @@ export function formatMatchSummary(summary: MatchForPlayer, player: AccountId): 
 export interface SparseMatch extends MatchBase {
 	meta: {
 		matchSeqNum: number,
-		series: {id: SeriesId, type: number},
-		leagueId: LeagueId,
-		league?: object,
 		patch: PatchId,
 		region: RegionId,
 		cluster: number,
-		replay: {url: URL, salt: number},
 		odota: OpenDotaMetadata
+		series?: {id?: SeriesId, type?: number},
+		leagueId?: LeagueId,
+		league?: object,
+		replay?: {url?: URL, salt?: number},
 	},
 	radiant: {
 		structuresLeft: StructuresBitmask,
@@ -473,7 +473,8 @@ export interface SparseMatch extends MatchBase {
 export function formatSparseMatch(match: UnparsedMatch): SparseMatch {
 	const formattedMatch: SparseMatch = {
 		id: match.match_id,
-		fetchTime : new Date().toISOString() as ISO8601TimeString,
+		fetchTime: new Date().toISOString() as ISO8601TimeString,
+		startTime: match.start_time ? new Date(match.start_time).toISOString() as ISO8601TimeString : undefined,
 		lengthSeconds: match.duration,
 		winningTeam: match.radiant_win ? 0 : 1,
 		gameMode: match.game_mode,
@@ -481,12 +482,18 @@ export function formatSparseMatch(match: UnparsedMatch): SparseMatch {
 		parseVersion: match.version,
 		meta: {
 			matchSeqNum: match.match_seq_num,
-			series: {id: match.series_id, type: match.series_type},
+			series: ((obj) => isEmpty(obj) ? undefined : obj)({
+				id: match.series_id,
+				type: match.series_type
+			}),
 			leagueId: match.leagueid,
 			patch: match.patch,
 			region: match.region,
 			cluster: match.cluster,
-			replay: {url: new URL(match.replay_url), salt: match.replay_salt},
+			replay: ((obj) => isEmpty(obj) ? undefined : obj)(nullsToUndefined({
+				url: match.replay_url ? new URL(match.replay_url) : undefined,
+				salt: match.replay_salt
+			})),
 			odota: {
 				engine: match.engine,
 				parseVersion: match.version,
@@ -516,7 +523,7 @@ export function formatSparseMatch(match: UnparsedMatch): SparseMatch {
 			),
 			kills: match.dire_score
 		},
-		draft: match.pick_bans.map(pb => parsePickBan(pb)),
+		draft: match.picks_bans.map(pb => parsePickBan(pb)),
 		players: match.players.map(player => formatSparsePlayer(player)),
 		firstBloodSeconds: match.first_blood_time,
 		humanPlayerCount: match.human_players,
@@ -555,7 +562,9 @@ export function formatFullMatch(match: ParsedMatch): FullMatch {
 			patch: match.patch,
 			region: match.region,
 			cluster: match.cluster,
-			replay: {url: new URL(match.replay_url), salt: match.replay_salt},
+			replay: {
+				url: match.replay_url ? new URL(match.replay_url) : undefined,
+				salt: match.replay_salt},
 			odota: {
 				engine: match.engine,
 				parseVersion: match.version,
@@ -585,7 +594,7 @@ export function formatFullMatch(match: ParsedMatch): FullMatch {
 			),
 			kills: match.dire_score
 		},
-		draft: match.pick_bans.map(pb => parsePickBan(pb)),
+		draft: match.picks_bans.map(pb => parsePickBan(pb)),
 		players: match.players.map(player => {
 			return formatFullInGamePlayer(player)
 		}),
@@ -683,7 +692,7 @@ export interface SparsePlayer {
 		id: HeroKey,
 		lvl: number,
 		abilityUpgrades: AbilityKey[],
-		permanentBuffs: PermanentBuff[],
+		permanentBuffs?: PermanentBuff[],
 		netWorth: number,
 		inventory: ItemKey[], // 0-5 for main, 6-8 for backpack
 		neutralItem: {artifact: ItemKey, enchantment: ItemKey}
@@ -697,7 +706,7 @@ export interface SparsePlayer {
 	}
 }
 
-function formatSparsePlayer(player: InGamePlayer): SparsePlayer {
+function formatSparsePlayer(player: OdotaUnparsedPlayer): SparsePlayer {
 	const sparsePlayer: SparsePlayer = {
 		account: {
 			id: player.account_id,
@@ -755,13 +764,13 @@ function formatSparsePlayer(player: InGamePlayer): SparsePlayer {
 			abilityUpgrades: player.ability_upgrades_arr.map(ability => {
 				return abilityKeysByExtId[ability]!
 			}),
-			permanentBuffs: player.permanent_buffs.map(buff => {
+			permanentBuffs: player.permanent_buffs ? player.permanent_buffs.map(buff => {
 				return {
 					id: buff.permanent_buff as PermanentBuffId,
 					stackCount: buff.stack_count,
 					receivedSeconds: buff.grant_time
 				}
-			}),
+			}) : undefined,
 			netWorth: player.net_worth,
 			inventory: [
 				ItemKeysByExtId[player.item_0]!, ItemKeysByExtId[player.item_1]!,
@@ -930,13 +939,13 @@ export function formatFullInGamePlayer(player: OdotaParsedPlayer): ParsedPlayer 
 			id: player.hero_id,
 			lvl: player.level,
 			abilityUpgrades: player.ability_upgrades_arr,
-			permanentBuffs: player.permanent_buffs.map(buff => {
+			permanentBuffs: player.permanent_buffs ? player.permanent_buffs.map(buff => {
 				return {
 					id: buff.permanent_buff as PermanentBuffId,
 					stackCount: buff.stack_count,
 					receivedSeconds: buff.grant_time
 				}
-			}),
+			}) : undefined,
 			netWorth: player.net_worth,
 			inventory: [
 				ItemKeysByExtId[player.item_0]!, ItemKeysByExtId[player.item_1]!,

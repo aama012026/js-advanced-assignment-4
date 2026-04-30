@@ -49,6 +49,25 @@
 			</div>
 		</div>
 		<div id="rank-distribution"></div>
+		<article id="match-view" data-show="!!$match" data-on:matchset__document="$match = evt.detail">
+			<section class="flex-row">
+				<h2 data-text="`Match ${$match.id}`"></h2>
+				<div class="flex-column">
+					<span data-text="`Start: ${new Date($match.startTime).toLocaleString()}`"></span>
+					<span data-text="`Fetch: ${new Date($match.fetchTime).toLocaleString()}`"></span>
+				</div>
+				<div class="flex-column">
+					<span data-text="`Gamemode ${$match.gameMode}`"></span>
+					<span data-text="`LobbyType ${$match.lobbyType}`"></span>
+				</div>
+			</section>
+			<section class="flex-row">
+				<span>Radiant</span>
+				<span data-text="$match.winningTeam === 0 ? 'Victory' : 'Defeat'"></span>
+				<span data-text="`Kills: ${$match.radiant.kills}`"></span>
+				<span data-text="`${timerStringFromSeconds($match.lengthSeconds)}`"></span>
+			</section>
+		</article>
 		<div id="match-history"></div>
 	</main>
 </body>
@@ -71,7 +90,7 @@
 </template>
 
 <template id="match-summary-template">
-	<tr>
+	<tr class="match-summary">
 		<td>
 			<div data-cell="match-id">Match:</div>
 			<div data-cell="match-time">Time:</div>

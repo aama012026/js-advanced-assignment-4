@@ -59,6 +59,7 @@
 }
 
 h1, h2 {
+	margin: 0;
 	text-shadow: 0 0 0.3rem var(--c-rare);
 	transition: all 360ms;
 	&:hover {
@@ -126,8 +127,16 @@ main {
 
 .flex-row {
 	display: flex;
+	flex-direction: row;
 	justify-content: space-around;
 	gap: 1em;
+}
+
+.flex-column {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: space-around;
 }
 
 .hover-box {
@@ -258,6 +267,11 @@ tr:has([data-result='Defeat']) {
 
 [data-cell='duration'] {
 	font-size: 2.5rem;
+}
+
+.match-summary:hover {
+	cursor: pointer;	
+	filter: brightness(1.2);
 }
 
 table {

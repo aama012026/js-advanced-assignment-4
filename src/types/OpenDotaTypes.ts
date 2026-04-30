@@ -78,11 +78,11 @@ export interface MatchSummary {
 }
 
 export interface UnparsedMatch extends Omit<MatchSummary, 'average_rank'> {
-	players: InGamePlayer[],
-	series_id: SeriesId,
-	series_type: number,
+	players: OdotaUnparsedPlayer[],
+	series_id?: SeriesId,
+	series_type?: number,
 	cluster: number, // seen in dota constants
-	replay_salt: number,
+	replay_salt?: number,
 	pre_game_duration: number, // not present in documentation.
 	match_seq_num: number, // is this for BEST OFs in pro matches?
 	tower_status_radiant: TowersBitmask, // int bitmask
@@ -91,15 +91,15 @@ export interface UnparsedMatch extends Omit<MatchSummary, 'average_rank'> {
 	barracks_status_dire: BarracksBitmask,
 	first_blood_time: number,
 	human_players: number, // human player count
-	leagueid: LeagueId,
+	leagueid?: LeagueId,
 	flags: number, // not present in documentation
 	engine: number,
 	radiant_score: number, // kills by radiant at match end
 	dire_score: number, // kills by dire at match end
-	pick_bans: PickBan[], // duplicate info from draft_timings?
+	picks_bans: PickBan[], // duplicate info from draft_timings?
 	od_data: OdotaData, // not present in documentation
 	metadata: any, // not present in documentation
-	replay_url: string,
+	replay_url?: string,
 	patch: PatchId, // patch ID from dotaconstants
 	region: RegionId, // region id from dotaconstants
 }
@@ -214,12 +214,12 @@ export interface InGamePlayerSummary {
 }
 
 export type MatchForPlayer = MatchSummary & InGamePlayerSummary
-export interface InGamePlayer extends InGamePlayerSummary {
+export interface OdotaUnparsedPlayer extends InGamePlayerSummary {
 	account_id: AccountId,
-	party_id: number | null,
+	party_id?: number | null,
 	team_number: number, // undocumented, prob unneeded - 0 for radiant and 1 for dire
 	team_slot: number, // undocumented, prob unneeded (0-4)
-	permanent_buffs: OdotaPermanentBuff[],
+	permanent_buffs?: OdotaPermanentBuff[],
 	item_0: ItemId,
 	item_1: ItemId,
 	item_2: ItemId,
@@ -273,7 +273,7 @@ export interface InGamePlayer extends InGamePlayerSummary {
 	benchmarks: PlayerHeroPerformance,
 }
 
-export interface OdotaParsedPlayer extends InGamePlayer {
+export interface OdotaParsedPlayer extends OdotaUnparsedPlayer {
 	obs_placed: number,
 	sen_placed: number,
 	creeps_stacked: number,

@@ -3,7 +3,7 @@ import type { AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
 import { bindPlayer, formatFullMatch, formatMatchSummary, formatRankDistribution, formatSparseMatch, heroLabels, RANK_NAMES, type Benchmark, type FullMatch, type Player, type PlayerMatchSummary, type RankDistribution, type RankStats, type SparseMatch } from './modules/bindings.js';
 import { assert, getLocalOrSet, round, setLocal, tryGetElement, tryGetJson, tryGetLocal, type NamedElement, type Result, type UnixTimestamp } from './modules/flow.js';
 import { PATHS } from './modules/paths.js';
-import { type Distributions, type AccountId, type OdotaPlayer, type OdotaSearchResult, type MatchForPlayer, leaverStatusByKey, LEAVER_STATUS, type RankBitmask, type UnparsedMatch, type ParsedMatch } from './types/OpenDotaTypes.js'
+import { type Distributions, type AccountId, type OdotaPlayer, type OdotaSearchResult, type MatchForPlayer, leaverStatusByKey, LEAVER_STATUS, type RankBitmask, type UnparsedMatch, type ParsedMatch, type MatchId } from './types/OpenDotaTypes.js'
 
 // @ts-expect-error (only required for TypeScript projects)
 import 'https://cdn.jsdelivr.net/gh/starfederation/datastar@v1.0.1/bundles/datastar.js'
@@ -103,6 +103,17 @@ function setProfile(player: Player) {
 	const rankTitle = getRankTitle(player.rank, player.leaderboardPos)
 	const evtObj = {detail: [personaName, id, selImg, rankMedal, rankTitle]}
 	document.dispatchEvent(new CustomEvent('profileupdate', evtObj))
+}
+
+async function setMatch(matchId: MatchId) {
+	console.log(`Setting match: ${matchId}`)
+	const match = await tryGetMatch(matchId)
+	if(!match) {
+		console.log(`Could not get match: ${matchId}`)
+		return
+	}
+	const evtObj = {detail: match}
+	document.dispatchEvent(new CustomEvent('matchset', evtObj))
 }
 // TODO: We get leaderboard position for immortal players as well, so we could
 // overlay a number on their medal plaque in the future.
@@ -273,6 +284,7 @@ function createMatchSummary(playerMatch: PlayerMatchSummary): HTMLTableRowElemen
 		name: 'matchSummaryFragment'
 	}
 	const cells = {
+		root: tryGetElement<HTMLTableRowElement>('.match-summary', rowFragment),
 		matchId: tryGetElement<HTMLDivElement>('[data-cell="match-id"]', rowFragment),
 		matchTime: tryGetElement<HTMLDivElement>('[data-cell="match-time"]', rowFragment),
 		heroImg: tryGetElement<HTMLTableCellElement>('[data-cell="hero-img"]', rowFragment),
@@ -286,6 +298,7 @@ function createMatchSummary(playerMatch: PlayerMatchSummary): HTMLTableRowElemen
 		lobbyType: tryGetElement<HTMLDivElement>('[data-cell="lobby-type"]', rowFragment),
 		leftGame: tryGetElement<HTMLDivElement>('[data-cell="left"]', rowFragment),
 	}
+	cells.root.addEventListener('click', _ => setMatch(match.id))
 	const heroImg = document.createElement('img')
 	heroImg.src = `${PATHS.IMG.HEROES}/${heroLabels[hero.id]}.png`
 	heroImg.alt = heroLabels[hero.id]!
@@ -326,3 +339,4 @@ function timerStringFromSeconds(duration: number): string {
 	const hoursString = hours > 0 ? `${hours.toString().padStart(2, '0')}:` : '';
 	return `${hoursString}${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 }
+(window as any).timerStringFromSeconds = timerStringFromSeconds
