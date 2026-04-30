@@ -200,9 +200,6 @@ export function assert<T>(object: T, objectName: string, partialErrorMsg: string
 }
 
 export function round(number: number, decimals?: number): number {
-	console.log(number)
 	const factor = Math.pow(10, decimals ?? 0)
-	console.log(factor)
-	console.log(Math.round(number * factor) / factor)
 	return Math.round(number * factor) / factor
 }

@@ -1,8 +1,10 @@
 :root {
 	--c-common: #2BAB01;
+	--c-common-transparent: #2BAB0188;
 	--c-rare: #1A87F9;
 	--c-rare-transparent: #1a87f988;
 	--c-epic: #B812F9;
+	--c-epic-transparent: #B812F988;
 	--c-artifact: #E29B01;
 	--c-artifact-transparent: #E29B0188;
 
@@ -306,10 +308,18 @@ th, td, table > caption {
 			&[data-role="count"] {
 				background-color: var(--c-artifact-transparent);
 				border-color: var(--c-artifact);
+				&.player-rank {
+					background-color: var(--c-common-transparent);
+					border-color: var(--c-common);
+				}
 			}
 			&[data-role="percentile"] {
 				background-color: var(--c-rare-transparent);
 				border-color: var(--c-rare);
+				&.player-rank {
+					background-color: var(--c-epic-transparent);
+					border-color: var(--c-epic);
+				}
 			}
 		}
 		& img.rank-medal {
@@ -321,9 +331,15 @@ th, td, table > caption {
 		& .bar {
 			&[data-role="count"] {
 				background-color: var(--c-artifact);
+				&.player-rank {
+					background-color: var(--c-common);
+				}
 			}
 			&[data-role="percentile"] {
 				background-color: var(--c-rare);
+				&.player-rank {
+					background-color: var(--c-epic);
+				}
 			}
 		}
 		& .hover-box {
@@ -332,15 +348,5 @@ th, td, table > caption {
 			align-items: center;
 
 		}
-	}
-}
-.player-rank {
-	&[data-role="count"] {
-		background-color: var(--c-common);
-		border-color: var(--c-epic);
-	}
-	&[data-role="percentile"] {
-		background-color: var(--c-rare-transparent);
-		border-color: var(--c-rare);
 	}
 }

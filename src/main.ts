@@ -1,9 +1,9 @@
 import axios from 'axios';
 import type { AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
-import { bindPlayer, formatMatchSummary, formatRankDistribution, heroLabels, RANK_NAMES, type Benchmark, type FullMatch, type Player, type PlayerMatchSummary, type RankDistribution, type RankStats, type SparseMatch } from './modules/bindings.js';
+import { bindPlayer, formatFullMatch, formatMatchSummary, formatRankDistribution, formatSparseMatch, heroLabels, RANK_NAMES, type Benchmark, type FullMatch, type Player, type PlayerMatchSummary, type RankDistribution, type RankStats, type SparseMatch } from './modules/bindings.js';
 import { assert, getLocalOrSet, round, setLocal, tryGetElement, tryGetJson, tryGetLocal, type NamedElement, type Result, type UnixTimestamp } from './modules/flow.js';
 import { PATHS } from './modules/paths.js';
-import { type Distributions, type AccountId, type OdotaPlayer, type OdotaSearchResult, type MatchForPlayer, leaverStatusByKey, LEAVER_STATUS, type RankBitmask } from './types/OpenDotaTypes.js'
+import { type Distributions, type AccountId, type OdotaPlayer, type OdotaSearchResult, type MatchForPlayer, leaverStatusByKey, LEAVER_STATUS, type RankBitmask, type UnparsedMatch, type ParsedMatch } from './types/OpenDotaTypes.js'
 
 // @ts-expect-error (only required for TypeScript projects)
 import 'https://cdn.jsdelivr.net/gh/starfederation/datastar@v1.0.1/bundles/datastar.js'
@@ -191,13 +191,16 @@ async function tryGetMatch(matchId: number): Promise<SparseMatch | FullMatch | n
 	if(match) {
 		return match
 	}
-	const response = await axios.get<SparseMatch | FullMatch>(`${ENDPOINT.MATCHES}/${matchId}`)
+	const response = await axios.get<UnparsedMatch | ParsedMatch>(`${ENDPOINT.MATCHES}/${matchId}`)
 	updateCallsLeft()
 	if(response.status != 200) {
 		return null
 	}
-	setLocal(`match:${matchId}`, response.data)
-	return response.data
+	const isParsed = response.data.od_data.has_parsed
+	const boundMatch = isParsed ? 
+		formatFullMatch(response.data as ParsedMatch) : formatSparseMatch(response.data)
+	setLocal(`match:${matchId}`, boundMatch)
+	return boundMatch
 }
 
 async function requestParse(matchId: number): Promise<AxiosResponse> {
@@ -238,7 +241,7 @@ function createRankDistributionBars(ranks: RankStats[]) {
 			name: 'rankBarFragment'
 		}
 		const el = {
-			rankEntry: tryGetElement<HTMLDivElement>('[data-rank]', rankBarFragment),
+			rankBars: tryGetElement<HTMLDivElement>('.rank-bar', rankBarFragment),
 			countBar: tryGetElement<HTMLDivElement>('.bar[data-role="count"]', rankBarFragment),
 			percentileBar: tryGetElement<HTMLDivElement>('.bar[data-role="percentile"]', rankBarFragment),
 			medal: tryGetElement<HTMLImageElement>('.rank-medal', rankBarFragment),
@@ -246,9 +249,12 @@ function createRankDistributionBars(ranks: RankStats[]) {
 			count: tryGetElement('[data-role="player-count"]', rankBarFragment),
 			percentile: tryGetElement('[data-role="player-percentile"]', rankBarFragment)
 		}
-		el.rankEntry.dataset.rank = getRankTitle(rank.rank)
+		const signal = `$isRank${rank.rank}`
+		el.rankBars.dataset.effect = `${signal} = $rankString === '${getRankTitle(rank.rank)}'`
 		el.countBar.style.height = `${round(rank.count / maxCount * 100, 2)}%`
+		el.countBar.dataset.class = `{'player-rank': ${signal}}`
 		el.percentileBar.style.height = `${round(cumulative / sum * 100, 2)}%`
+		el.percentileBar.dataset.class = `{'player-rank': ${signal}}`
 		el.medal.src = getMedalImgPath(rank.rank)
 		el.medal.alt = getRankTitle(rank.rank)
 		el.name.textContent = getRankTitle(rank.rank)
