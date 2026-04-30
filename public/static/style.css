@@ -19,9 +19,11 @@
 	--grey-lit: #b2b2b2;
 	--grey-dim: #4c4c4c;
 	--slate: #242627;
+	--slate-transparent: #242627cc;
 	--black: #101415;
 
-	--border: 0.1em solid white;
+	--border: 0.1em solid var(--grey-dim);
+	--corner-radius: 0.2em;
 }
 
 .rare {
@@ -33,11 +35,15 @@
 	--color: var(--c-epic);
 	--bg-color: var(--slate);
 }
+.artifact {
+	--color: var(--c-artifact);
+	--bg-color: var(--c-artifact);
+}
 
 .box {
 	padding: 0.2lh 1ch;
 	border: 0.1em solid var(--color);
-	border-radius: 0.2em;
+	border-radius: var(--corner-radius);
 	outline: 0.05em solid #fff3;
 	outline-offset: -0.1em;
 	background-color: var(--bg-color);
@@ -118,7 +124,25 @@ main {
 
 .flex-row {
 	display: flex;
+	justify-content: space-around;
 	gap: 1em;
+}
+
+.hover-box {
+	position: absolute;
+	bottom: 10%;
+	left: -6ch;
+	display: none;
+	z-index: 1;
+	width: 12ch;
+	background-color: var(--slate-transparent);
+	& h2 {
+		font-size: 1rem;
+		margin: 0;
+	}
+	& span {
+		font-size: 0.8rem;
+	}
 }
 
 button {
@@ -129,7 +153,7 @@ button {
 	border: 0.1em solid var(--color);
 	outline: 0.05em solid #fff3;
 	outline-offset: -0.1em;
-	border-radius: 0.2em;
+	border-radius: var(--corner-radius);
 	color: var(--color);
 	background-color: var(--bg-color);
 	transition: all 360ms;
@@ -247,4 +271,76 @@ th, td, table > caption {
 	display: flex;
 	flex-direction: column;
 	align-items: center;
+}
+
+#rank-distribution {
+	margin: 0.5rem;
+	border: var(--border);
+	border-radius: var(--corner-radius);
+	background: linear-gradient(-180deg, var(--black), var(--slate));
+	padding: 1rem 6ch 0.5rem;
+	aspect-ratio: 5/2;
+	display: flex;
+	flex-direction: row;
+	align-items: end;
+	justify-content: space-around;
+	gap: 0.4em;
+	& .rank-bar {
+		position: relative;
+		gap: 0.2em 0;
+		& > .flex-row {
+			height: 100%;
+			gap: 0;
+			align-items: end;
+		}
+		display: flex;
+		flex-direction: column;
+		justify-content: end;
+		height: 100%;
+		border-radius: 0.5em;
+		& .bar {
+			border: var(--border);
+			width: 100%;
+			border-top-left-radius: 0.1rem;
+			border-top-right-radius: 0.1rem;
+			&[data-role="count"] {
+				background-color: var(--c-artifact-transparent);
+				border-color: var(--c-artifact);
+			}
+			&[data-role="percentile"] {
+				background-color: var(--c-rare-transparent);
+				border-color: var(--c-rare);
+			}
+		}
+		& img.rank-medal {
+			width: 100%;
+		}
+	}
+	& .rank-bar:hover {
+		background-color: #fff1;
+		& .bar {
+			&[data-role="count"] {
+				background-color: var(--c-artifact);
+			}
+			&[data-role="percentile"] {
+				background-color: var(--c-rare);
+			}
+		}
+		& .hover-box {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+
+		}
+	}
+}
+.player-rank {
+	&[data-role="count"] {
+		background-color: var(--c-common);
+		border-color: var(--c-epic);
+	}
+	&[data-role="percentile"] {
+		background-color: var(--c-rare-transparent);
+		border-color: var(--c-rare);
+	}
 }

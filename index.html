@@ -25,27 +25,30 @@
 		</section>
 	</header>
 	<main>
-		<section id="profile" data-show="!!$accountId" data-on:profileupdate__document="[
-				$personaName, $accountId, $steamAvatar,	$rankMedal,	$rankString
-			] = evt.detail"
-		>
-			<h2 data-grid="pnm" data-text="$personaName"></h2>
-			<span data-grid="acc">ID: <span data-text="$accountId"></span></span>
-			<img data-grid="avt" data-attr="{src: $steamAvatar, alt:`${$personaname}'s steam avatar`}">
-			<img data-grid="mdl" data-attr="{src: $rankMedal, alt:$rankString}">
-			<span data-grid="rnk" data-text="$rankString"></span>
-		</section>
-		<div>
-			<label for="search-input">Enter a 8-digit steam account-id or a persona-name</label>
-			<input type="text" data-bind:search-term data-init="$searchTerm = ''" 
-				data-computed:is-number="!!$searchTerm.match(/^\d*$/)" data-class="{rare: !!$isNumber, epic: !$isNumber}">
-			<button type="button" class="epic" disabled data-show="!$isNumber" data-attr:disabled="!$searchTerm" 
-				data-on:click="searchTypedAccount($searchTerm)">search persona
-			</button>
-			<button type="button" class="rare" disabled data-show="$isNumber" data-attr:disabled="!$searchTerm.match(/^\d{8}$/)"
-				data-on:click="searchTypedAccount(parseInt($searchTerm))">search account
-			</button>
+		<div class="flex-row">
+			<section id="profile" data-show="!!$accountId" data-on:profileupdate__document="[
+					$personaName, $accountId, $steamAvatar,	$rankMedal,	$rankString
+				] = evt.detail"
+			>
+				<h2 data-grid="pnm" data-text="$personaName"></h2>
+				<span data-grid="acc">ID: <span data-text="$accountId"></span></span>
+				<img data-grid="avt" data-attr="{src: $steamAvatar, alt:`${$personaname}'s steam avatar`}">
+				<img data-grid="mdl" data-attr="{src: $rankMedal, alt:$rankString}">
+				<span data-grid="rnk" data-text="$rankString"></span>
+			</section>
+			<div>
+				<label for="search-input">Enter a 8-digit steam account-id or a persona-name</label>
+				<input type="text" data-bind:search-term data-init="$searchTerm = ''" 
+					data-computed:is-number="!!$searchTerm.match(/^\d*$/)" data-class="{rare: !!$isNumber, epic: !$isNumber}">
+				<button type="button" class="epic" disabled data-show="!$isNumber" data-attr:disabled="!$searchTerm" 
+					data-on:click="searchTypedAccount($searchTerm)">search persona
+				</button>
+				<button type="button" class="rare" disabled data-show="$isNumber" data-attr:disabled="!$searchTerm.match(/^\d{8}$/)"
+					data-on:click="searchTypedAccount(parseInt($searchTerm))">search account
+				</button>
+			</div>
 		</div>
+		<div id="rank-distribution"></div>
 		<div id="match-history"></div>
 	</main>
 </body>
@@ -94,3 +97,20 @@
 	</tr>
 </template>
 </html>
+
+<template id="rank-bar-template">
+	<div class="rank-bar">
+		<div class="flex-row" data-attr:rank="$rankName" data-rank="" data-class:player-rank="$rankName===$rankString">
+			<div class="bar" data-role="count"></div>
+			<div class="bar" data-role="percentile"></div>
+		</div>
+		<div>
+			<img class="rank-medal">
+		</div>
+		<div class="rare hover-box box">
+			<h2 data-role="rank-name"></h2>
+			<span data-role="player-count"></span>
+			<span data-role="player-percentile"></span>
+		</div>
+	</div>
+</template>
