@@ -37,13 +37,13 @@
 				<span data-grid="rnk" data-text="$rankString"></span>
 			</section>
 			<div>
-				<label for="search-input">Enter a 8-digit steam account-id or a persona-name</label>
+				<label for="search-input">Enter a 8 or 9-digit steam account-id or a persona-name</label>
 				<input type="text" data-bind:search-term data-init="$searchTerm = ''" 
 					data-computed:is-number="!!$searchTerm.match(/^\d*$/)" data-class="{rare: !!$isNumber, epic: !$isNumber}">
 				<button type="button" class="epic" disabled data-show="!$isNumber" data-attr:disabled="!$searchTerm" 
 					data-on:click="searchTypedAccount($searchTerm)">search persona
 				</button>
-				<button type="button" class="rare" disabled data-show="$isNumber" data-attr:disabled="!$searchTerm.match(/^\d{8}$/)"
+				<button type="button" class="rare" disabled data-show="$isNumber" data-attr:disabled="!$searchTerm.match(/^\d{8,9}$/)"
 					data-on:click="searchTypedAccount(parseInt($searchTerm))">search account
 				</button>
 			</div>
@@ -64,8 +64,8 @@
 			<section class="flex-row">
 				<span>Radiant</span>
 				<span data-text="$match.winningTeam === 0 ? 'Victory' : 'Defeat'"></span>
-				<span data-text="`Kills: ${$match.radiant.kills}`"></span>
-				<span data-text="`${timerStringFromSeconds($match.lengthSeconds)}`"></span>
+				<!-- <span data-text="`Kills: ${$match.radiant.kills}`"></span> -->
+				<!-- <span data-text="`${timerStringFromSeconds($match.lengthSeconds)}`"></span> -->
 			</section>
 		</article>
 		<div id="match-history"></div>
