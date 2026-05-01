@@ -1,14 +1,28 @@
 import axios from 'axios';
-import type { AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
-import { bindPlayer, formatFullMatch, formatMatchSummary, formatRankDistribution, formatSparseMatch, heroLabels, RANK_NAMES, type Benchmark, type FullMatch, type Player, type PlayerMatchSummary, type RankDistribution, type RankStats, type SparseMatch } from './modules/bindings.js';
-import { assert, getLocalOrSet, round, setLocal, tryGetElement, tryGetJson, tryGetLocal, type NamedElement, type Result, type UnixTimestamp } from './modules/flow.js';
-import { PATHS } from './modules/paths.js';
-import { type Distributions, type AccountId, type OdotaPlayer, type OdotaSearchResult, type MatchForPlayer, leaverStatusByKey, LEAVER_STATUS, type RankBitmask, type UnparsedMatch, type ParsedMatch, type MatchId } from './types/OpenDotaTypes.js'
+import type {AxiosResponse} from 'axios';
+import {PATHS} from './modules/paths.js';
+import {getLocalOrSet, round, setLocal, tryGetElement, tryGetLocal, type NamedElement,
+	type Result, type UnixTimestamp 
+} from './modules/flow.js';
+import {bindPlayer, formatFullMatch, formatMatchSummary, formatRankDistribution,
+	formatSparseMatch, heroLabels, RANK_NAMES, type Benchmark, type FullMatch,
+	type Player, type PlayerMatchSummary, type RankDistribution, type RankStats,
+	type SparseMatch
+} from './modules/bindings.js';
+import {type Distributions, type AccountId, type OdotaPlayer, type OdotaSearchResult,
+	type MatchForPlayer, leaverStatusByKey, LEAVER_STATUS, type RankBitmask,
+	type UnparsedMatch, type ParsedMatch, type MatchId
+} from './types/OpenDotaTypes.js'
 
 // @ts-expect-error (only required for TypeScript projects)
 import 'https://cdn.jsdelivr.net/gh/starfederation/datastar@v1.0.1/bundles/datastar.js'
 axios.defaults.baseURL = 'https://api.opendota.com/api'
 axios.defaults.allowAbsoluteUrls = false
+
+interface CallsLeft {
+	minute: {left: number, sinceWhen: UnixTimestamp},
+	today: {left: number, sinceWhen: UnixTimestamp}
+}
 
 const ENDPOINT = {
 	MATCHES: '/matches',
@@ -40,28 +54,25 @@ const ENDPOINT = {
 
 const LocalDataKey = {
 	CALL_LIMIT_TIMESTAMPS: 'callLimitTimestamps',
-	RankDistribution: 'rankDistribution',
-	Benchmarks: 'benchmarks',
-	StoredMatches: 'storedMatches',
+	RANK_DISTRIBUTION: 'rankDistribution',
+	BENCHMARKS: 'benchmarks',
+	STORED_MATCHES: 'storedMatches',
 } as const
 
 // INIT
-let benchmarks = tryGetLocal<Benchmark[]>(LocalDataKey.Benchmarks)
-
+// let benchmarks = tryGetLocal<Benchmark[]>(LocalDataKey.Benchmarks)
 
 const templates = {
 	matchHistory: tryGetElement<HTMLTemplateElement>('#match-history-template'),
 	matchSummary: tryGetElement<HTMLTemplateElement>('#match-summary-template'),
 	rankBar: tryGetElement<HTMLTemplateElement>('#rank-bar-template')
 }
+
 const sections = {
 	matchHistory: tryGetElement<HTMLDivElement>('#match-history'),
 	rankDistribution: tryGetElement<HTMLDivElement>('#rank-distribution')
 }
-interface CallsLeft {
-	minute: {left: number, sinceWhen: UnixTimestamp},
-	today: {left: number, sinceWhen: UnixTimestamp}
-}
+
 const calls = getLocalOrSet<CallsLeft>(
 	LocalDataKey.CALL_LIMIT_TIMESTAMPS, {
 		minute: {left: 60, sinceWhen: Date.now() as UnixTimestamp},
@@ -70,6 +81,7 @@ const calls = getLocalOrSet<CallsLeft>(
 )
 // We dispatch the update event without change once to echo loaded object.
 updateCallsLeft(0)
+
 const rankDistribution = await tryGetRankDistribution()
 createRankDistributionBars(rankDistribution.data!.ranks)
 console.log(JSON.stringify(rankDistribution))
@@ -90,6 +102,7 @@ function updateCallsLeft(callsToSubtract?: number): void {
 	calls.today.left = Math.max(calls.today.left - count, 0)
 	setLocal<CallsLeft>(LocalDataKey.CALL_LIMIT_TIMESTAMPS, calls)
 	const evtObj = {detail:  {minute: calls.minute.left, today: calls.today.left}}
+	// We dispatch event that datastar data-on attributes can listen to.
 	document.dispatchEvent( new CustomEvent('callsleftupdate', evtObj))
 }
 
@@ -112,7 +125,17 @@ async function setMatch(matchId: MatchId) {
 		console.log(`Could not get match: ${matchId}`)
 		return
 	}
-	const evtObj = {detail: match}
+	const evtObj = {detail: [
+		match.id,
+		new Date(match.fetchTime).toLocaleString(),
+		match.startTime ? new Date(match.startTime).toLocaleString() : 'unknown',
+		timerStringFromSeconds(match.lengthSeconds),
+		match.gameMode,
+		match.lobbyType,
+		match.radiant.kills,
+		match.dire.kills,
+		match.winningTeam
+	]}
 	document.dispatchEvent(new CustomEvent('matchset', evtObj))
 }
 // TODO: We get leaderboard position for immortal players as well, so we could
@@ -126,6 +149,7 @@ function getMedalImgPath(rank: RankBitmask | undefined, leaderboardPos?: number)
 	}
 	return `${PATHS.IMG.MEDALS}/rank${suffix}.webp`
 }
+
 function getRankTitle(rank: RankBitmask | undefined, leaderboardPos?: number): string {
 	if(!rank) {
 		return 'uncalibrated'
@@ -144,9 +168,6 @@ function getRankTitle(rank: RankBitmask | undefined, leaderboardPos?: number): s
 	return `${medal} ${medal != 'immortal' ? star : leaderboardPos}`
 }
 
-// page flow -> search accounts -> provide sample account ids.
-// show match summary for recent matches. Let user click match.
-// show match details with focus on account hero. Let user request parse if match is not parsed.
 async function searchTypedAccount(searchTerm: string | AccountId) {
 	/* TODO: Restructure validation and error for axios.
 	Axios throws errors (usually rejecting the promise). Our validation
@@ -221,7 +242,7 @@ async function requestParse(matchId: number): Promise<AxiosResponse> {
 }
 
 async function tryGetRankDistribution(): Promise<Result<RankDistribution>> {
-	let rankDistribution = tryGetLocal<RankDistribution>(LocalDataKey.RankDistribution)
+	let rankDistribution = tryGetLocal<RankDistribution>(LocalDataKey.RANK_DISTRIBUTION)
 	// Try to get from localstorage first, fetch if not present or stale (here 24H shelf life).
 	if(!(rankDistribution && new Date().getHours() - new Date(rankDistribution.timestamp).getHours() <= 24)) {
 		const result = await axios.get<Distributions>(ENDPOINT.DISTRIBUTIONS)
@@ -230,14 +251,11 @@ async function tryGetRankDistribution(): Promise<Result<RankDistribution>> {
 			return {ok: false}
 		}
 		rankDistribution = formatRankDistribution(result.data)
-		setLocal<RankDistribution>(LocalDataKey.RankDistribution, rankDistribution)
+		setLocal<RankDistribution>(LocalDataKey.RANK_DISTRIBUTION, rankDistribution)
 	}
 	return {ok: true, data: rankDistribution}
 }
 
-// async function tryGetBenchmarks(hero: HeroId) {
-
-// }
 function createRankDistributionBars(ranks: RankStats[]) {
 	sections.rankDistribution.replaceChildren()
 	const sum: number = ranks.reduce((tally, rank) => tally += rank.count, 0)

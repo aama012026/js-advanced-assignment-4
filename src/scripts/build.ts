@@ -15,7 +15,7 @@ const ABILITY_ID_BINDINGS_PATH = `${DATA_PATH}/${FILES.BINDINGS.ABILITIES}`
 
 import type { DotaConstantsHero, DotaConstantsItem } from '../types/DotaConstantsTypes.js'
 import { tryGetImg, assert, tryGetJson } from '../modules/flow.js'
-import { tryReadJSON, tryWriteImg, tryWriteJSON } from '../modules/flowLocal.js'
+import { tryReadJSON, tryWriteImg, tryWriteJSON } from '../modules/flowNode.js'
 import type { Hero, IdBinding, Item, Targets } from '../types/BoundTypes.js'
 import { DIR, FILES, PATHS } from '../modules/paths.js'
 

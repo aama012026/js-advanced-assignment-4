@@ -1,7 +1,7 @@
+import { FILES, PATHS } from "./paths.js"
 import { isEmpty, nullsToUndefined, type ISO8601TimeString, type Unique } from "./flow.js"
-import type { GameModeId, LobbyTypeId, PatchId, RegionId, 
-	UnitOrderId
-} from "../types/DotaConstantsTypes.js"
+import type { IdBinding } from "../types/BoundTypes.js"
+import type { GameModeId, LobbyTypeId, PatchId, RegionId, UnitOrderId} from "../types/DotaConstantsTypes.js"
 import { BARRACK_FLAGS, TOWER_FLAGS, type AccountId, type BarracksBitmask,
 	type Cosmetic, type Distributions, type GoldReasonId, type OdotaUnparsedPlayer,
 	type LeagueId, type LeaverStatus, type MatchForPlayer, type MatchId,
@@ -9,8 +9,6 @@ import { BARRACK_FLAGS, TOWER_FLAGS, type AccountId, type BarracksBitmask,
 	type Pause, type Percentile, type PickBan, type PlayerSlot, type RankBitmask,
 	type SeriesId, type SteamId, type TowersBitmask, type UnparsedMatch, type XpReasonId
 } from "../types/OpenDotaTypes.js"
-import type { IdBinding } from "../types/BoundTypes.js"
-import { FILES, PATHS } from "./paths.js"
 
 const HERO_BINDINGS_FILE = `${PATHS.GENERATED_DATA}/${FILES.BINDINGS.HEROES}`
 const ABILITY_BINDINGS_FILE = `${PATHS.GENERATED_DATA}/${FILES.BINDINGS.ABILITIES}`
@@ -71,6 +69,7 @@ type SideExtId = typeof SIDE[number]['extId']
 const SideKeysByExtId = Object.fromEntries(
 	SIDE.map(side => [side.extId, side.key])
 ) as Record<SideExtId, SideKey>
+
 // Used for rendering.
 export const sideNames = Object.fromEntries(
 	SIDE.map(side => [side.key, side.label])
@@ -79,7 +78,6 @@ export const sideNames = Object.fromEntries(
 // This comes as a bool from opendota, so no need to freeze keys atm.
 export type Outcome = 'win' | 'loss'
 export type PermanentBuffId = Unique<number, 'permanentBuff'>
-
 
 export const LANES = [
 	{key: 0, label: 'safelane', extId: 1},
@@ -90,6 +88,7 @@ export const LANES = [
 	/** maybe not needed */
 	{key: 4, label: 'dire junle', extId: 5}
 ] as const satisfies IdBinding<number>[]
+
 export type LaneKey = typeof LANES[number]['key']
 export type LaneLabel = typeof LANES[number]['label']
 export type LaneExtId = typeof LANES[number]['extId']

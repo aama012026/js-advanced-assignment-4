@@ -49,23 +49,34 @@
 			</div>
 		</div>
 		<div id="rank-distribution"></div>
-		<article id="match-view" data-show="!!$match" data-on:matchset__document="$match = evt.detail">
-			<section class="flex-row">
-				<h2 data-text="`Match ${$match.id}`"></h2>
+		<article id="match-view" data-show="!!$matchId" data-on:matchset__document="[
+			$matchId, $matchFetchTime, $matchStartTime, $matchLength, $matchGameMode,
+			$matchLobbyType, $matchRadiantKills, $matchDireKills, $matchWinner
+			] = evt.detail"
+		>
+			<section class="match-grid">
+				<h2 data-text="`Match ${$matchId}`"></h2>
 				<div class="flex-column">
-					<span data-text="`Start: ${new Date($match.startTime).toLocaleString()}`"></span>
-					<span data-text="`Fetch: ${new Date($match.fetchTime).toLocaleString()}`"></span>
+					<span data-text="`Start: ${$matchStartTime}`"></span>
+					<span data-text="`Fetch: ${$matchFetchTime}`"></span>
 				</div>
 				<div class="flex-column">
-					<span data-text="`Gamemode ${$match.gameMode}`"></span>
-					<span data-text="`LobbyType ${$match.lobbyType}`"></span>
+					<span data-text="`Gamemode ${$matchGameMode}`"></span>
+					<span data-text="`LobbyType ${$matchLobbyType}`"></span>
 				</div>
 			</section>
-			<section class="flex-row">
-				<span>Radiant</span>
-				<span data-text="$match.winningTeam === 0 ? 'Victory' : 'Defeat'"></span>
-				<!-- <span data-text="`Kills: ${$match.radiant.kills}`"></span> -->
-				<!-- <span data-text="`${timerStringFromSeconds($match.lengthSeconds)}`"></span> -->
+			<section class="match-grid" data-computed:radiant-won="$matchWinner === 1">
+				<div class="even-row radiant" data-class:gradient="$radiantWon">
+					<span class="radiant">Radiant</span>
+					<span data-class="{radiant:$radiantWon, neutral:!$radiantWon}" data-text="$radiantWon ? 'Victory' : 'Defeat'"></span>
+					<span class="neutral" data-text="`Kills: ${$matchRadiantKills}`"></span>
+				</div>
+				<span data-text="`${$matchLength}`"></span>
+				<div class="even-row dire" data-class:gradient="!$radiant.won">
+					<span class="neutral" data-text="`Kills: ${$matchDireKills}`"></span>
+					<span data-class="{dire:!$radiantWon, neutral:$radiantWon}" data-text="!$radiantWon ? 'Victory' : 'Defeat'"></span>
+					<span class="dire">Dire</span>
+				</div>
 			</section>
 		</article>
 		<div id="match-history"></div>
